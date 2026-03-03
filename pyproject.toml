@@ -1,0 +1,9 @@
+[project]
+name = "agent"
+version = "0.1.0"
+description = "Personal Agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.135.1",
+]
