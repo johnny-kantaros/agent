@@ -1,6 +1,6 @@
 
 from src.tools.registry import register
-from src.tools.examples.echo.tool import EchoTool
+from src.tools.examples.echo.echo_tool import EchoTool
 
 def register_tools():
     register(EchoTool())
