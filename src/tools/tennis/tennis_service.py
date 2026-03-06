@@ -3,14 +3,114 @@ import urllib.error
 import json
 import sys
 from datetime import date, timedelta
-
+from src.utils.constants import TENNIS_LOGIN_URL, TENNIS_BASE_API_URL, TENNIS_2FAC_SEND_URL, TENNIS_2FAC_VERIFY_URL
+import requests
 from src.utils.constants import COURTS
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class TennisService:
 
     def __init__(self):
         self.API_BASE = "https://api.rec.us/v1/locations"
+        self.API_KEY = os.getenv("TENNIS_API_KEY")
+        self.PARTICIPANT_ID = os.getenv("TENNIS_PARTICIPANT_ID")
+        self.token = None # Store auth token for session here, will need to store in redis eventually
+
+    def init_reservation(
+            self,
+            court_number: str,
+            court_name: str,
+            date: str,
+            start_time: str,
+            end_time: str,
+    ):
+        self._login()
+        url = f"{TENNIS_BASE_API_URL}/reservations"
+
+        court_sport_id = COURTS[court_name]["courts"][court_number]["court_sport_id"]
+
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        payload = {
+            "courtSportIds": [court_sport_id],
+            "flow": "cart",
+            "participantUserId": self.PARTICIPANT_ID,
+            "from": {
+                "date": date,
+                "time": start_time
+            },
+            "to": {
+                "date": date,
+                "time": end_time
+            }
+        }
+
+        r = requests.post(url, json=payload, headers=headers)
+        r.raise_for_status()
+
+        self._send_2fac_code()
+
+        return r.json()
+
+    def _send_2fac_code(self):
+
+        url = TENNIS_2FAC_SEND_URL
+
+        headers = {
+            "Authorization": f"Bearer {self.token}",  # your auth token
+            "Content-Type": "application/json",
+            "Accept": "*/*",
+        }
+
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        return None
+
+    def _verify_2fac_code(self, code):
+        url = TENNIS_2FAC_VERIFY_URL
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "code": code
+        }
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        return True
+
+
+    def _login(self) -> str:
+
+        url = f"{TENNIS_LOGIN_URL}{self.API_KEY}"
+
+        payload = {
+            "email": os.getenv("TENNIS_LOGIN_EMAIL"),
+            "password": os.getenv("TENNIS_LOGIN_PASSWORD"),
+            "returnSecureToken": True
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Origin": "https://www.rec.us",
+            "Referer": "https://www.rec.us/"
+        }
+
+        r = requests.post(url, json=payload, headers=headers)
+        r.raise_for_status()
+
+        data = r.json()
+
+        self.token = data["idToken"]
 
     def _resolve_courts(self, court_query: str | None) -> dict:
         """

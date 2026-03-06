@@ -5,6 +5,8 @@ from openai.types.chat import ChatCompletionUserMessageParam, ChatCompletionSyst
 
 from src.tools.examples.echo.echo_tool import EchoTool
 from src.tools.registry import TOOLS, register
+from src.tools.tennis.confirm_tennis_court_reservation_tool import TennisCourtConfirmTool
+from src.tools.tennis.tennis_court_reservation_start_tool import TennisCourtBookerInitialization
 from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
 
 client = OpenAI()
@@ -73,11 +75,13 @@ def run_agent(messages: list, tools: list):
 
 if __name__ == "__main__":
 
-    message1 = "check tennis courts for moscone and alice marble on friday. Please respond in non-military time"
+    message1 = "can you book court 1 for lafayette at 9am-10:30am on 3/10?"
     message2 = "today's date and time is 03/04/2026 at 9:35pm"
 
     register(EchoTool())
-    register(TennisScheduleChecker())
+    #register(TennisScheduleChecker())
+    register(TennisCourtBookerInitialization())
+    register(TennisCourtConfirmTool())
     tool_schemas = [tool.schema() for tool in TOOLS.values()]
 
     output = run_agent(
