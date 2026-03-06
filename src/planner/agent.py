@@ -6,7 +6,7 @@ from openai.types.chat import ChatCompletionUserMessageParam, ChatCompletionSyst
 from src.tools.examples.echo.echo_tool import EchoTool
 from src.tools.registry import TOOLS, register
 from src.tools.tennis.confirm_tennis_court_reservation_tool import TennisCourtConfirmTool
-from src.tools.tennis.tennis_court_reservation_start_tool import TennisCourtBookerInitialization
+from src.tools.tennis.start_tennis_court_reservation_tool import TennisCourtBookerInitialization
 from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
 
 client = OpenAI()
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     message2 = "today's date and time is 03/04/2026 at 9:35pm"
 
     register(EchoTool())
-    #register(TennisScheduleChecker())
+    register(TennisScheduleChecker())
     register(TennisCourtBookerInitialization())
     register(TennisCourtConfirmTool())
     tool_schemas = [tool.schema() for tool in TOOLS.values()]
