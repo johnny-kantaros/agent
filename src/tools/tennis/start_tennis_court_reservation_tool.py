@@ -60,3 +60,4 @@ class TennisCourtBookerInitialization(Tool):
 
     def run(self, tool_input: dict, user_context: dict) -> dict:
         init_res = self.service.init_reservation(court_name=tool_input["court_name"], court_number=tool_input["court_number"], date=tool_input["date"], start_time=tool_input["start_time"], end_time=tool_input["end_time"])
+        return init_res

@@ -68,15 +68,12 @@ def run_agent(messages: list, tools: list):
                 "content": message.content or ""
             })
 
-            return message.content or ""
+            return message.content, messages
 
     return "Sorry, something went wrong."
 
 
 if __name__ == "__main__":
-
-    message1 = "can you book court 1 for lafayette at 9am-10:30am on 3/10?"
-    message2 = "today's date and time is 03/04/2026 at 9:35pm"
 
     register(EchoTool())
     register(TennisScheduleChecker())
@@ -84,18 +81,25 @@ if __name__ == "__main__":
     register(TennisCourtConfirmTool())
     tool_schemas = [tool.schema() for tool in TOOLS.values()]
 
-    output = run_agent(
-        messages=[
-            ChatCompletionUserMessageParam(
-                role="user",
-                content=message1
-            ),
-            ChatCompletionSystemMessageParam(
+    system_message = "today's date and time is 03/06/2026 at 10:18am"
+    messages: list = [ChatCompletionSystemMessageParam(
                 role="system",
-                content=message2
-            )
-        ],
-        tools=tool_schemas
-    )
+                content=system_message
+            )]
 
-    print(output)
+    while True:
+
+        message = input("\n\n Enter a message: ")
+        #message = "book moscone next tuesday at 7:30am on court 1 for an hour"
+        messages.append(
+            ChatCompletionUserMessageParam(
+                    role="user",
+                    content=message
+                ))
+
+        output, updated_messages = run_agent(
+            messages= messages,
+            tools=tool_schemas
+        )
+
+        print(f"\n{output}")

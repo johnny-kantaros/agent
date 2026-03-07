@@ -205,7 +205,7 @@ class TennisService:
             court_results = []
 
             for day in dates:
-                data = self._fetch_schedule(info["id"], day)
+                data = self._fetch_schedule(info["location_id"], day)
                 slots = self._parse_slots(data, day)
 
                 # Filter by time window

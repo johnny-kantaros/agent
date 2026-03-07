@@ -8,3 +8,9 @@ Personal Agent to automate common tasks
 - Haircut booker
 - Calendar integration
 - Email integration
+
+## To-do
+
+- Structure tool outputs into a pydantic model
+- Finish tennis booking
+- Prompt engineering updates
