@@ -1,0 +1,20 @@
+app = "personal-agent"
+
+[build]
+  image = "personal-agent:latest"
+
+[env]
+  TELEGRAM_BOT_TOKEN = "8711756202:AAHX3tRYbIBrVNoOBVWAwV6aBwPIN3kc2Vg"
+
+[experimental]
+  allowed_public_ports = [8080]
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+
+  [[services.ports]]
+    port = 443
