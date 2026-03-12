@@ -12,6 +12,7 @@ from src.utils.constants import (
     COURTS,
     TENNIS_2FAC_SEND_URL,
     TENNIS_2FAC_VERIFY_URL,
+    TENNIS_BASE_API_URL,
     TENNIS_LOGIN_URL,
 )
 
@@ -20,7 +21,6 @@ load_dotenv()
 
 class TennisService:
     def __init__(self):
-        self.API_BASE = "https://api.rec.us/v1"
         self.API_KEY = os.getenv("TENNIS_API_KEY")
         self.PARTICIPANT_ID = os.getenv("TENNIS_PARTICIPANT_ID")
 
@@ -47,7 +47,7 @@ class TennisService:
 
         self._login()
 
-        url = f"{self.API_BASE}/reservations"
+        url = f"{TENNIS_BASE_API_URL}/reservations"
 
         court_sport_id: str = COURTS[court_name]["courts"][court_number]["court_sport_id"]
 
@@ -98,7 +98,7 @@ class TennisService:
 
     def _initialize_payment(self):
 
-        url = f"{self.API_BASE}/orders/{self.order_id}/pay"
+        url = f"{TENNIS_BASE_API_URL}/orders/{self.order_id}/pay"
 
         payload = {
             "payments": [
@@ -218,9 +218,7 @@ class TennisService:
         return matched
 
     def _fetch_schedule(self, location_id: str, day: date) -> dict:
-        url = (
-            f"{self.API_BASE}/locations/{location_id}/schedule?startDate={day.strftime('%Y-%m-%d')}"
-        )
+        url = f"{TENNIS_BASE_API_URL}/locations/{location_id}/schedule?startDate={day.strftime('%Y-%m-%d')}"
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
