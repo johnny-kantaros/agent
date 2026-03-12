@@ -12,5 +12,7 @@ Personal Agent to automate common tasks
 ## To-do
 
 - Structure tool outputs into a pydantic model
-- Finish tennis booking
+~~- Finish tennis booking~~
 - Prompt engineering updates
+- Calendar tool
+- Telegram hooks
