@@ -51,11 +51,13 @@ class TennisCourtBookerInitialization(Tool):
         self.service = tennis_service
 
     def run(self, tool_input: dict, user_context: dict) -> dict:
-        init_res = self.service.init_reservation(
+        reservation_id: str = self.service.init_reservation(
             court_name=tool_input["court_name"],
             court_number=tool_input["court_number"],
             date=tool_input["date"],
             start_time=tool_input["start_time"],
             end_time=tool_input["end_time"],
         )
-        return init_res
+        return {
+            "response": f"The reservation process has been initiated (reservation id: {reservation_id}). A confirmation code was sent to the user. Provide that code to continue and complete the reservation."
+        }

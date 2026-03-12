@@ -43,7 +43,7 @@ class TennisService:
         date: str,
         start_time: str,
         end_time: str,
-    ):
+    ) -> str:
 
         self._login()
 
@@ -71,11 +71,11 @@ class TennisService:
         self.order_item_id = item["id"]
         self.amount_cents = item["finalPrice"]
 
-        reservation_id = item["details"]["reservationId"]
+        reservation_id: str = item["details"]["reservationId"]
 
         self._send_2fac_code()
 
-        return {"reservation_id": reservation_id, "order_id": self.order_id}
+        return reservation_id
 
     def confirm_reservation(self, confirmation_code: str):
 
@@ -88,8 +88,13 @@ class TennisService:
         if not payment_method_id:
             raise RuntimeError("Saved Stripe payment method ID not set in STRIPE_PAYMENT_METHOD_ID")
 
-        result = self._confirm_payment_intent(payment_data, payment_method_id)
-        return result
+        self._confirm_payment_intent(payment_data, payment_method_id)
+        return {
+            "status": "confirmed",
+            "order_id": self.order_id,
+            "amount_paid_cents": self.amount_cents,
+            "currency": "usd",
+        }
 
     def _initialize_payment(self):
 

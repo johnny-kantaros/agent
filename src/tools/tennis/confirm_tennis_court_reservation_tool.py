@@ -31,4 +31,7 @@ class TennisCourtConfirmTool(Tool):
         self.service = tennis_service
 
     def run(self, tool_input: dict, user_context: dict) -> dict:
-        return self.service.confirm_reservation(confirmation_code=tool_input["verification_code"])
+        confirm_response: dict = self.service.confirm_reservation(
+            confirmation_code=tool_input["verification_code"]
+        )
+        return {"response": confirm_response}
