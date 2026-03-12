@@ -1,13 +1,12 @@
 from src.tools.base import Tool
-from src.tools.tennis.tennis_service import TennisService
+from src.tools.tennis.tennis_service import tennis_service
 from src.utils.constants import COURTS
 
 
 class TennisCourtBookerInitialization(Tool):
     name = "start_tennis_court_reservation"
 
-    description = (
-    """
+    description = """
     Creates a pending tennis court reservation for a specific court, date, and time.
 
     This initializes the booking and places the reservation in a temporary cart. 
@@ -17,7 +16,6 @@ class TennisCourtBookerInitialization(Tool):
 
     Use this tool when the user clearly wants to book a specific tennis court and time.
     """
-    )
 
     ALLOWED_COURTS = list(COURTS.keys())
 
@@ -27,37 +25,37 @@ class TennisCourtBookerInitialization(Tool):
             "court_name": {
                 "type": "string",
                 "enum": ALLOWED_COURTS,
-                "description": "Name of the court location."
+                "description": "Name of the court location.",
             },
             "court_number": {
                 "type": "integer",
-                "description": "Court number at the facility (e.g. 1,2,3,4)."
+                "description": "Court number at the facility (e.g. 1,2,3,4).",
             },
-            "date": {
-                "type": "string",
-                "description": "Reservation date in YYYY-MM-DD format"
-            },
+            "date": {"type": "string", "description": "Reservation date in YYYY-MM-DD format"},
             "start_time": {
                 "type": "string",
-                "description": "Start time in HH:MM:SS military format."
+                "description": "Start time in HH:MM:SS military format.",
             },
-            "end_time": {
-                "type": "string",
-                "description": "End time in HH:MM:SS military format."
-            },
+            "end_time": {"type": "string", "description": "End time in HH:MM:SS military format."},
             "reservation_id": {
                 "type": "string",
                 "description": (
                     "Optional reservation referenceId if already known from the schedule API."
-                )
-            }
+                ),
+            },
         },
-        "required": ["court_name", "court_number", "date", "start_time", "end_time"]
+        "required": ["court_name", "court_number", "date", "start_time", "end_time"],
     }
 
     def __init__(self):
-        self.service = TennisService()
+        self.service = tennis_service
 
     def run(self, tool_input: dict, user_context: dict) -> dict:
-        init_res = self.service.init_reservation(court_name=tool_input["court_name"], court_number=tool_input["court_number"], date=tool_input["date"], start_time=tool_input["start_time"], end_time=tool_input["end_time"])
+        init_res = self.service.init_reservation(
+            court_name=tool_input["court_name"],
+            court_number=tool_input["court_number"],
+            date=tool_input["date"],
+            start_time=tool_input["start_time"],
+            end_time=tool_input["end_time"],
+        )
         return init_res

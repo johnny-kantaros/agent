@@ -1,4 +1,6 @@
-COURTS = {
+from typing import Any
+
+COURTS: dict[str, Any] = {
     "Alice Marble": {
         "location_id": "81cd2b08-8ea6-40ee-8c89-aeba92506576",
         "slug": "rec.us/alicemarble",

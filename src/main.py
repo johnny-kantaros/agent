@@ -1,8 +1,11 @@
+from fastapi import FastAPI
 
-from src.tools.registry import register
-from src.tools.examples.echo.echo_tool import EchoTool
+from src.api.routes import router
 
-def register_tools():
-    register(EchoTool())
+app = FastAPI(title="Agent API")
+app.include_router(router)
 
-register_tools()
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True, log_level="debug")
