@@ -16,11 +16,18 @@ async def handle_telegram_update(update: dict):
     if "message" not in update:
         return
 
-    chat_id = update["message"]["chat"]["id"]
-    text = update["message"].get("text", "")
+    message = update["message"]
+    chat_id = message["chat"]["id"]
+
+    # Ignore messages from bots (including own)
+    sender = message.get("from", {})
+    if sender.get("is_bot"):
+        return
+
+    text = message.get("text", "")
 
     # Run your agent
     response = agent.execute(query=text)
 
-    # Respond back to telegram
+    # Respond back to Telegram
     send_response_message(chat_id, response.get("response"))
