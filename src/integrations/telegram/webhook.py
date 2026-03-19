@@ -43,6 +43,14 @@ async def handle_telegram_update(update: dict):
         send_response_message(chat_id, "chat history cleared")
         return
 
+    if text == "/sleep":
+        agent.sleep()
+        send_response_message(chat_id, "agent sleeping")
+
+    if text == "/wakeup":
+        agent.wakeup()
+        send_response_message(chat_id, "agent activated")
+
     # Run agent and respond back
     response = agent.execute(query=text)
     send_response_message(chat_id, response.get("response"))
