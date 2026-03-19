@@ -1,0 +1,21 @@
+app = "johnny-personal-agent"
+primary_region = "lax"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+[[services.ports]]
+  port = 80
+  handlers = ["http"]
+
+[[services.ports]]
+  port = 443
+  handlers = ["tls", "http"]
+
+[[vm]]
+  cpus = 1
+  memory_mb = 256

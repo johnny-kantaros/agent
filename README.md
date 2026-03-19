@@ -1,7 +1,7 @@
 # Personal Agent
 Personal Agent to automate common tasks
 
-## Forward-looking features
+### Forward-looking features
 
 - Tasks list (to-do and administrative)
 - Golf booker
@@ -9,10 +9,23 @@ Personal Agent to automate common tasks
 - Calendar integration
 - Email integration
 
-## To-do
+### To-do
 
+- ~~Deploy the app~~
 - Structure tool outputs into a pydantic model
-~~- Finish tennis booking~~
+- ~~- Finish tennis booking~~
 - Prompt engineering updates
+  - Add current date time + system message about me
+  - Also to tools
+- Make sandbox ngrok agent for testing
 - Calendar tool
-- Telegram hooks
+- ~~- Telegram hooks~~
+
+
+### Local Testing:
+
+1. `ngrok http 8000` # start a proxy URL for localhost
+2. `curl -X POST "https://api.telegram.org/bot{bot-id}/setWebhook" \
+     -d "url={ngrok-generated-url}/telegram/webhook"` # set the telegram hook 
+
+

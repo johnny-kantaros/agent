@@ -83,3 +83,6 @@ class Agent:
                 return {"response": message.content, "chat_history": self.messages}
 
         return "Sorry, something went wrong."
+
+
+agent = Agent()  # Global
