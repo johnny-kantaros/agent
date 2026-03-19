@@ -19,3 +19,8 @@ primary_region = "lax"
 [[vm]]
   cpus = 1
   memory_mb = 256
+
+[deploy]
+  # Only 1 machine
+  min_machines = 1
+  max_machines = 1
