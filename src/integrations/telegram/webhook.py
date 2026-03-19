@@ -1,11 +1,20 @@
 import os
 
 import requests
+from dotenv import load_dotenv
 
 from src.planner.agent import agent
 
+load_dotenv()
+
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
+user_id = os.environ.get("TELEGRAM_USER_ID")
+if not user_id:
+    raise ValueError("TELEGRAM_USER_ID is not set")
+
+ALLOWED_USER_ID = int(user_id)  # your Telegram ID
 
 
 def send_response_message(chat_id: int, text: str):
@@ -13,25 +22,26 @@ def send_response_message(chat_id: int, text: str):
 
 
 async def handle_telegram_update(update: dict):
-    if "message" not in update:
+    message = update.get("message")
+    if not message:
         return
 
-    message = update["message"]
+    # Ignore messages from bots
+    if message.get("from", {}).get("is_bot", False):
+        return
+
+    user_id = message["from"]["id"]
     chat_id = message["chat"]["id"]
-
-    # Ignore messages from bots (including own)
-    sender = message.get("from", {})
-    if sender.get("is_bot"):
-        return
-
     text = message.get("text", "")
+
+    # Restrict to a single allowed user
+    if user_id != ALLOWED_USER_ID:
+        return
 
     if text == "/clear":
         agent.reset_history()
         send_response_message(chat_id, "chat history cleared")
 
-    # Run your agent
+    # Run agent and respond back
     response = agent.execute(query=text)
-
-    # Respond back to Telegram
     send_response_message(chat_id, response.get("response"))
