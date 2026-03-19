@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
@@ -18,11 +19,25 @@ jobs:
       - name: Log in to Fly.io
         uses: superfly/flyctl-actions@v1
         with:
-          args: "auth token"
+          args: auth login --access-token ${{ secrets.FLY_API_TOKEN }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set Fly secrets
+        run: |
+          # Persist Telegram secret from GitHub secrets
+          flyctl secrets set TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Deploy to Fly.io
         uses: superfly/flyctl-actions@v1
         with:
-          args: "deploy --remote-only"
+          args: deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Register Telegram webhook
+        run: |
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/setWebhook" \
+               -d "url=https://johnny-personal-agent.fly.dev/telegram/webhook/${{ secrets.TELEGRAM_WEBHOOK_SECRET }}"
