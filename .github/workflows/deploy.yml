@@ -18,7 +18,7 @@ jobs:
 
       # Install Fly CLI
       - name: Set up Flyctl
-        uses: superfly/flyctl-actions@v2
+        uses: superfly/flyctl-actions@v1
         with:
           version: latest
 
