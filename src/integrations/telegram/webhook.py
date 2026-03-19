@@ -41,6 +41,7 @@ async def handle_telegram_update(update: dict):
     if text == "/clear":
         agent.reset_history()
         send_response_message(chat_id, "chat history cleared")
+        return
 
     # Run agent and respond back
     response = agent.execute(query=text)
