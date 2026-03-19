@@ -1,3 +1,4 @@
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from src.integrations.telegram.webhook import handle_telegram_update
 from src.planner.agent import agent
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
 SECRET_TOKEN = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
@@ -37,6 +39,8 @@ async def telegram_webhook(token: str, req: Request):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     data = await req.json()
+    logging.info(f"Received Telegram update: {data}")
+
     await handle_telegram_update(data)
     return {"ok": True}
 
