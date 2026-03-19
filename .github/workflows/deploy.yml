@@ -16,28 +16,21 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      # Install Fly CLI
-      - name: Set up Flyctl
-        uses: superfly/flyctl-actions@v1
-        with:
-          version: latest
-
-      # Persist Telegram secret in Fly
-      - name: Set Fly secrets
+      - name: Install Fly CLI
         run: |
-          flyctl secrets set TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          curl -L https://fly.io/install.sh | sh
+          echo "$HOME/.fly/bin" >> $GITHUB_PATH
+
+      - name: Set Fly secrets
+        run: fly secrets set TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      # Deploy the app to Fly
       - name: Deploy to Fly.io
-        uses: superfly/flyctl-actions@v1
-        with:
-          args: deploy --remote-only
+        run: fly deploy
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      # Register Telegram webhook
       - name: Register Telegram webhook
         run: |
           curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/setWebhook" \
