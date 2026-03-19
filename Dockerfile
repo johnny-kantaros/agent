@@ -1,16 +1,24 @@
+# Use official Python 3.11 slim image
 FROM python:3.11-slim
 
-# Set workdir
-WORKDIR /src
+# Set working directory
+WORKDIR /app
 
-# Copy files
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install pip build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential curl && rm -rf /var/lib/apt/lists/*
 
+# Copy dependency files first for caching
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies (using pip)
+RUN pip install --no-cache-dir "uvicorn[standard]" && \
+    pip install --no-cache-dir .
+
+# Copy source code
 COPY ./src ./src
 
-# Set environment variable
+# Ensure stdout/stderr is unbuffered (logs show up in Fly)
 ENV PYTHONUNBUFFERED=1
 
-# Start Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use $PORT provided by Fly
+CMD ["sh", "-c", "uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8080}"]

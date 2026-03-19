@@ -1,27 +1,21 @@
-# fly.toml app configuration file generated for johnny-personal-agent on 2026-03-18T19:18:32-07:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'johnny-personal-agent'
-primary_region = 'sjc'
-
-[experimental]
+app = "johnny-personal-agent"
+primary_region = "lax"
 
 [build]
-  dockerfile = 'Dockerfile'
+  dockerfile = "Dockerfile"
 
-[[services]]
-  protocol = 'tcp'
+[http_service]
   internal_port = 8080
+  force_https = true
 
-  [[services.ports]]
-    port = 80
+[[services.ports]]
+  port = 80
+  handlers = ["http"]
 
-  [[services.ports]]
-    port = 443
+[[services.ports]]
+  port = 443
+  handlers = ["tls", "http"]
 
 [[vm]]
-  memory = '256mb'
   cpus = 1
   memory_mb = 256
