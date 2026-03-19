@@ -19,6 +19,8 @@ Personal Agent to automate common tasks
   - Also to tools
 - Make sandbox ngrok agent for testing
 - Calendar tool
+- Session/chat history
+- Kill command
 - ~~- Telegram hooks~~
 
 
