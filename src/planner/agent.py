@@ -28,6 +28,12 @@ class Agent:
 
         self.tool_schemas = [tool.schema() for tool in TOOLS.values()]
 
+    def reset_history(self):
+        """Clears chat history but keeps system message and tools."""
+        self.messages = [
+            ChatCompletionSystemMessageParam(role="system", content=self.system_message)
+        ]
+
     def execute(self, query: str):
         """
         Simple react style loop that exposes tools added to the registry at build time.
