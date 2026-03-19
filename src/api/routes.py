@@ -10,15 +10,19 @@ from src.planner.agent import agent
 load_dotenv()
 
 router = APIRouter()
-SECRET_TOKEN = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "change-me")
+SECRET_TOKEN = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
+if not SECRET_TOKEN:
+    raise RuntimeError("TELEGRAM_WEBHOOK_SECRET is not set")
 
 
 class SendMessageRequest(BaseModel):
     message: str
 
 
-@router.post("/message")
-def send_message(data: SendMessageRequest):
+@router.post("/message/{token}")
+def send_message(token: str, data: SendMessageRequest):
+    if token != SECRET_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
     response = agent.execute(data.message)
     return {"response": response}
 
