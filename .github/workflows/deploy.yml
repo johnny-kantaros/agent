@@ -16,16 +16,8 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Log in to Fly.io
-        uses: superfly/flyctl-actions@v1
-        with:
-          args: auth login --access-token ${{ secrets.FLY_API_TOKEN }}
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
       - name: Set Fly secrets
         run: |
-          # Persist Telegram secret from GitHub secrets
           flyctl secrets set TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
