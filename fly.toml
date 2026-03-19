@@ -1,10 +1,7 @@
-app = "personal-agent"
+app = "johnny-personal-agent"
 
 [build]
-  image = "personal-agent:latest"
-
-[env]
-  TELEGRAM_BOT_TOKEN = "8711756202:AAHX3tRYbIBrVNoOBVWAwV6aBwPIN3kc2Vg"
+  dockerfile = "Dockerfile"
 
 [experimental]
   allowed_public_ports = [8080]
