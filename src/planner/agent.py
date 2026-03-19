@@ -11,7 +11,7 @@ from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
 
 client = OpenAI()
 
-MAX_STEPS = 6
+MAX_STEPS = 4
 
 register(EchoTool())
 register(TennisScheduleChecker())
@@ -27,6 +27,13 @@ class Agent:
         ]
 
         self.tool_schemas = [tool.schema() for tool in TOOLS.values()]
+        self._sleep = False
+
+    def sleep(self):
+        self._sleep = True
+
+    def wakeup(self):
+        self._sleep = False
 
     def reset_history(self):
         """Clears chat history but keeps system message and tools."""
@@ -43,6 +50,9 @@ class Agent:
             query: incoming query
 
         Returns: Agent output"""
+
+        if self._sleep:
+            return {"response": "Agent sleeping: send /wakeup to wake the agent up"}
 
         user_message = ChatCompletionUserMessageParam(role="user", content=query)
 
@@ -88,7 +98,7 @@ class Agent:
 
                 return {"response": message.content, "chat_history": self.messages}
 
-        return "Sorry, something went wrong."
+        return {"response": "Sorry, something went wrong."}
 
 
 agent = Agent()  # Global
