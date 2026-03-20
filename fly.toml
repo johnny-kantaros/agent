@@ -21,6 +21,4 @@ primary_region = "lax"
   memory_mb = 256
 
 [deploy]
-  # Only 1 machine
-  min_machines = 1
-  max_machines = 1
+  strategy = "immediate"
