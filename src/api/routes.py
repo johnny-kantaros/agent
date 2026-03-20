@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -41,7 +42,7 @@ async def telegram_webhook(token: str, req: Request):
     data = await req.json()
     logging.info(f"Received Telegram update: {data}")
 
-    await handle_telegram_update(data)
+    asyncio.create_task(handle_telegram_update(data))
     return {"ok": True}
 
 
