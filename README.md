@@ -15,12 +15,12 @@ Personal Agent to automate common tasks
 - Structure tool outputs into a pydantic model
 - ~~- Finish tennis booking~~
 - Prompt engineering updates
-  - Add current date time + system message about me
+  - ~~Add current date time + system message about me~~
   - Also to tools
 - Make sandbox ngrok agent for testing
 - Calendar tool
-- Session/chat history
-- Kill command
+- ~~Session/chat history~~
+- ~~Kill command (sleep)~~
 - ~~- Telegram hooks~~
 
 
