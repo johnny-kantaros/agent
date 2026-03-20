@@ -1,8 +1,9 @@
 import json
 
 from openai import OpenAI
-from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
+from openai.types.chat import ChatCompletionUserMessageParam
 
+from src.planner.utils import create_system_message
 from src.tools.examples.echo.echo_tool import EchoTool
 from src.tools.registry import TOOLS, register
 from src.tools.tennis.confirm_tennis_court_reservation_tool import TennisCourtConfirmTool
@@ -12,6 +13,8 @@ from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
 client = OpenAI()
 
 MAX_STEPS = 4
+MAX_HISTORY = 10
+
 
 register(EchoTool())
 register(TennisScheduleChecker())
@@ -21,10 +24,7 @@ register(TennisCourtConfirmTool())
 
 class Agent:
     def __init__(self):
-        self.system_message = "today's date and time is 03/11/2026 at 4pm"
-        self.messages: list = [
-            ChatCompletionSystemMessageParam(role="system", content=self.system_message)
-        ]
+        self.messages: list = [create_system_message()]
 
         self.tool_schemas = [tool.schema() for tool in TOOLS.values()]
         self._sleep = False
@@ -37,9 +37,7 @@ class Agent:
 
     def reset_history(self):
         """Clears chat history but keeps system message and tools."""
-        self.messages = [
-            ChatCompletionSystemMessageParam(role="system", content=self.system_message)
-        ]
+        self.messages = [create_system_message()]
 
     def execute(self, query: str):
         """
@@ -54,11 +52,13 @@ class Agent:
         if self._sleep:
             return {"response": "Agent sleeping: send /wakeup to wake the agent up"}
 
+        self.messages[0] = create_system_message()
         user_message = ChatCompletionUserMessageParam(role="user", content=query)
 
         self.messages.append(user_message)
 
         for _ in range(MAX_STEPS):
+            self.messages = [self.messages[0]] + self.messages[-MAX_HISTORY + 1 :]
             response = client.chat.completions.create(
                 model="gpt-5-mini",
                 messages=self.messages,
@@ -73,9 +73,18 @@ class Agent:
                 tool_name = tool_call.function.name
                 tool_call_id = tool_call.id
 
-                args = json.loads(tool_call.function.arguments)
+                try:
+                    args = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    args = {}
 
-                tool_instance = TOOLS[tool_name]
+                tool_instance = TOOLS.get(tool_name)
+                if not tool_instance:
+                    self.messages.append(
+                        {"role": "assistant", "content": f"Error: tool '{tool_name}' not found."}
+                    )
+                    continue
+
                 result = tool_instance.run(args, user_context={})
 
                 # assistant message
