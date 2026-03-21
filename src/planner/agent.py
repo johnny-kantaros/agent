@@ -1,4 +1,5 @@
 import json
+import logging
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
@@ -11,6 +12,7 @@ from src.tools.tennis.start_tennis_court_reservation_tool import TennisCourtBook
 from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
 
 client = OpenAI()
+logging.basicConfig(level=logging.INFO)
 
 MAX_STEPS = 4
 MAX_HISTORY = 10
@@ -22,10 +24,24 @@ register(TennisCourtBookerInitialization())
 register(TennisCourtConfirmTool())
 
 
+def trim_messages(messages):
+    """
+    Trim history without breaking assistant->tool relationships.
+    """
+    system = messages[0]
+    rest = messages[1:]
+
+    trimmed = rest[-(MAX_HISTORY - 1) :]
+
+    while trimmed and trimmed[0]["role"] == "tool":
+        trimmed = trimmed[1:]
+
+    return [system] + trimmed
+
+
 class Agent:
     def __init__(self):
         self.messages: list = [create_system_message()]
-
         self.tool_schemas = [tool.schema() for tool in TOOLS.values()]
         self._sleep = False
 
@@ -36,29 +52,19 @@ class Agent:
         self._sleep = False
 
     def reset_history(self):
-        """Clears chat history but keeps system message and tools."""
         self.messages = [create_system_message()]
 
     def execute(self, query: str):
-        """
-        Simple react style loop that exposes tools added to the registry at build time.
-        The reasoner will iteratively call tools until a final synthesis is complete.
-
-        Args:
-            query: incoming query
-
-        Returns: Agent output"""
-
         if self._sleep:
             return {"response": "Agent sleeping: send /wakeup to wake the agent up"}
 
         self.messages[0] = create_system_message()
-        user_message = ChatCompletionUserMessageParam(role="user", content=query)
-
-        self.messages.append(user_message)
+        # add user message
+        self.messages.append(ChatCompletionUserMessageParam(role="user", content=query))
 
         for _ in range(MAX_STEPS):
-            self.messages = [self.messages[0]] + self.messages[-MAX_HISTORY + 1 :]
+            self.messages = trim_messages(self.messages)
+            logging.info("Messages:\n%s", json.dumps(self.messages, indent=2, default=str))
             response = client.chat.completions.create(
                 model="gpt-5-mini",
                 messages=self.messages,
@@ -67,27 +73,7 @@ class Agent:
 
             message = response.choices[0].message
 
-            # Tool call
             if message.tool_calls:
-                tool_call = message.tool_calls[0]
-                tool_name = tool_call.function.name
-                tool_call_id = tool_call.id
-
-                try:
-                    args = json.loads(tool_call.function.arguments)
-                except json.JSONDecodeError:
-                    args = {}
-
-                tool_instance = TOOLS.get(tool_name)
-                if not tool_instance:
-                    self.messages.append(
-                        {"role": "assistant", "content": f"Error: tool '{tool_name}' not found."}
-                    )
-                    continue
-
-                result = tool_instance.run(args, user_context={})
-
-                # assistant message
                 self.messages.append(
                     {
                         "role": "assistant",
@@ -96,18 +82,43 @@ class Agent:
                     }
                 )
 
-                # tool response
-                self.messages.append(
-                    {"role": "tool", "tool_call_id": tool_call_id, "content": json.dumps(result)}
-                )
+                for tool_call in message.tool_calls:
+                    tool_name = tool_call.function.name
+                    tool_call_id = tool_call.id
 
-            else:
-                # final response
-                self.messages.append({"role": "assistant", "content": message.content or ""})
+                    try:
+                        args = json.loads(tool_call.function.arguments)
+                    except json.JSONDecodeError:
+                        args = {}
 
-                return {"response": message.content, "chat_history": self.messages}
+                    tool_instance = TOOLS.get(tool_name)
+
+                    if not tool_instance:
+                        result = {"error": f"Tool '{tool_name}' not found"}
+                    else:
+                        try:
+                            result = tool_instance.run(args, user_context={})
+                        except Exception as e:
+                            result = {"error": str(e)}
+
+                    self.messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call_id,
+                            "content": json.dumps(result),
+                        }
+                    )
+
+                continue
+
+            self.messages.append({"role": "assistant", "content": message.content or ""})
+
+            return {
+                "response": message.content,
+                "chat_history": self.messages,
+            }
 
         return {"response": "Sorry, something went wrong."}
 
 
-agent = Agent()  # Global
+agent = Agent()
