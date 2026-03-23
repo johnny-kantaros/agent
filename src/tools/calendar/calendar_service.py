@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -15,16 +17,17 @@ SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 class CalendarService:
     def __init__(self):
-        cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        if not cred_path:
-            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS not set")
+        cred_b64 = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON_B64")
+        if not cred_b64:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON_B64 not set")
 
-        self.credentials = Credentials.from_service_account_file(
-            cred_path,
-            scopes=SCOPES,
-        )
-        self.service = build("calendar", "v3", credentials=self.credentials)
+        creds_dict = json.loads(base64.b64decode(cred_b64).decode("utf-8"))
+        credentials = Credentials.from_service_account_info(creds_dict)
+        self.service = build("calendar", "v3", credentials=credentials)
+
         self.calendar_id = os.getenv("CALENDAR_ID")
+        if not self.calendar_id:
+            raise ValueError("CALENDAR_ID not set")
 
     def create_event(
         self,
