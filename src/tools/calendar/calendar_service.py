@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -89,6 +89,95 @@ class CalendarService:
             "start_time": start,
             "end_time": end,
         }
+
+    def list_events(
+        self,
+        time_min: str | None = None,
+        time_max: str | None = None,
+        query: str | None = None,
+        max_results: int = 50,
+    ) -> list[dict]:
+
+        # defaults to today → 7 days ahead
+        if not time_min:
+            time_min_dt = datetime.now(UTC)
+            time_min = time_min_dt.isoformat() + "Z"
+
+        if not time_max:
+            time_max_dt = datetime.now(UTC) + timedelta(days=7)
+            time_max = time_max_dt.isoformat() + "Z"
+
+        events_result = (
+            self.service.events()
+            .list(
+                calendarId=self.calendar_id,
+                timeMin=time_min,
+                timeMax=time_max,
+                q=query,
+                singleEvents=True,
+                orderBy="startTime",
+                maxResults=max_results,
+            )
+            .execute()
+        )
+
+        return events_result.get("items", [])
+
+    def check_availability(
+        self,
+        start_time: str,
+        end_time: str,
+    ) -> dict:
+
+        events = self.list_events(
+            time_min=start_time,
+            time_max=end_time,
+        )
+
+        if events:
+            conflicts = [
+                {
+                    "title": ev.get("summary"),
+                    "start": ev["start"].get("dateTime") or ev["start"].get("date"),
+                    "end": ev["end"].get("dateTime") or ev["end"].get("date"),
+                }
+                for ev in events
+            ]
+            return {"available": False, "conflicts": conflicts}
+
+        return {"available": True, "conflicts": []}
+
+    def find_time_slot(
+        self,
+        duration_minutes: int,
+        start_range: str,
+        end_range: str,
+        step_minutes: int = 15,
+    ) -> dict:
+        """
+        Suggests the next available time slot of given duration
+        within a time range.
+        """
+        start_dt = datetime.fromisoformat(start_range)
+        end_dt = datetime.fromisoformat(end_range)
+        delta = timedelta(minutes=step_minutes)
+        duration = timedelta(minutes=duration_minutes)
+
+        current_start = start_dt
+        while current_start + duration <= end_dt:
+            current_end = current_start + duration
+            avail = self.check_availability(
+                start_time=current_start.isoformat(),
+                end_time=current_end.isoformat(),
+            )
+            if avail["available"]:
+                return {
+                    "start_time": current_start.isoformat(),
+                    "end_time": current_end.isoformat(),
+                }
+            current_start += delta
+
+        return {"available": False, "message": "No slot available in range"}
 
 
 calendar_service = CalendarService()  # Global

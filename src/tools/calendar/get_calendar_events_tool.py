@@ -1,0 +1,75 @@
+from typing import Any
+
+from src.tools.base import Tool
+from src.tools.calendar.calendar_service import calendar_service
+
+
+class GetCalendarEvents(Tool):
+    name = "get_calendar_events"
+    description = """
+    Get all calendar events in a given timeframe. If the user provides a timeframe such as 'the next week', 
+    check for the next 7 days. If the user asks for "the weekend of x day", assume Friday, Saturday, and Sunday
+    closest to whatever day they're referring to.
+    """
+
+    parameters = {
+        "type": "object",
+        "properties": {
+            "title": {
+                "type": "string",
+                "description": "Title of the calendar event (optional, used for filtering).",
+            },
+            "start_time": {
+                "type": "string",
+                "description": "Start of the time range in ISO 8601 format.",
+            },
+            "end_time": {
+                "type": "string",
+                "description": "End of the time range in ISO 8601 format.",
+            },
+        },
+        "required": ["start_time", "end_time"],
+    }
+
+    def __init__(self):
+        self.service = calendar_service
+
+    def run(self, tool_input: dict, user_context: dict) -> dict:
+        try:
+            # Required Fields
+            start_time = tool_input.get("start_time")
+            end_time = tool_input.get("end_time")
+
+            if not start_time:
+                return {"status": "error", "message": "Missing required field: start_time"}
+            if not end_time:
+                return {"status": "error", "message": "Missing required field: end_time"}
+
+            # Optional filters
+            query = tool_input.get("title")  # search by title
+
+            events: list[dict[str, Any]] = self.service.list_events(
+                time_min=start_time,
+                time_max=end_time,
+                query=query,
+                max_results=100,
+            )
+
+            # Return structured output for agent
+            formatted_events = [
+                {
+                    "title": ev.get("summary"),
+                    "start_time": ev["start"].get("dateTime") or ev["start"].get("date"),
+                    "end_time": ev["end"].get("dateTime") or ev["end"].get("date"),
+                    "location": ev.get("location"),
+                    "description": ev.get("description"),
+                    "attendees": [a.get("email") for a in ev.get("attendees", [])],
+                    "html_link": ev.get("htmlLink"),
+                }
+                for ev in events
+            ]
+
+            return {"status": "success", "events": formatted_events}
+
+        except Exception as e:
+            return {"status": "error", "message": str(e)}

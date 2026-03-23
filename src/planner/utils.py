@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from openai.types.chat import ChatCompletionSystemMessageParam
 
@@ -10,10 +11,8 @@ def create_system_message() -> ChatCompletionSystemMessageParam:
     - Current context (time, date)
     - Tooling instructions
     """
-
-    now = datetime.now(UTC)
-    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S UTC")
-
+    now = datetime.now(tz=ZoneInfo("America/Los_Angeles"))
+    formatted_time = now.strftime("%Y-%m-%d %H:%M:%S PST")
     system_message = f"""
 You are a personal AI agent designed to help the user efficiently complete tasks and answer questions.
 
@@ -42,6 +41,7 @@ Use tools when:
 - Be direct and natural
 - Avoid unnecessary verbosity
 - When completing a task, confirm clearly
+- Only respond with 12-hour time mode (no military mode)
 
 """
 
