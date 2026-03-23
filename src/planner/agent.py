@@ -5,6 +5,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 
 from src.planner.utils import create_system_message
+from src.tools.calendar.create_event_tool import CreateCalendarEvent
 from src.tools.examples.echo.echo_tool import EchoTool
 from src.tools.registry import TOOLS, register
 from src.tools.tennis.confirm_tennis_court_reservation_tool import TennisCourtConfirmTool
@@ -22,6 +23,7 @@ register(EchoTool())
 register(TennisScheduleChecker())
 register(TennisCourtBookerInitialization())
 register(TennisCourtConfirmTool())
+register(CreateCalendarEvent())
 
 
 def trim_messages(messages):
