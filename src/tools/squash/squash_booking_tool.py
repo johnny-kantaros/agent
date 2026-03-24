@@ -4,7 +4,10 @@ from src.tools.squash.squash_service import squash_service
 
 class SquashBookingTool(Tool):
     name = "squash_court_booker"
-    description = "Books a squash court for a given date, time, and court selection"
+    description = """
+    Call this tool when the user wants to book a squash court.
+    Squash courts are always booked for 45 minutes.
+    """
 
     parameters = {
         "type": "object",
@@ -21,26 +24,16 @@ class SquashBookingTool(Tool):
                 "type": "number",
                 "description": "End time in minutes from midnight",
             },
-            "court_id": {
+            "court_number": {
                 "type": "string",
-                "description": "ID of the court to book",
-            },
-            "category_options_id": {
-                "type": "string",
-                "description": "Category options ID for the court",
-            },
-            "time_slot_id": {
-                "type": "string",
-                "description": "Time slot ID for the booking",
+                "description": "Number of the court to book (1, 2, 3, 4, 5)",
             },
         },
         "required": [
             "date",
             "time_from",
             "time_to",
-            "court_id",
-            "category_options_id",
-            "time_slot_id",
+            "court_number",
         ],
     }
 
@@ -54,22 +47,22 @@ class SquashBookingTool(Tool):
         date = tool_input["date"]
         time_from = tool_input["time_from"]
         time_to = tool_input["time_to"]
-        court_id = tool_input["court_id"]
-        category_options_id = tool_input["category_options_id"]
-        time_slot_id = tool_input["time_slot_id"]
+        court_number = tool_input["court_number"]
+        category_options_id = tool_input.get("category_options_id")
+        time_slot_id = tool_input.get("time_slot_id")
 
         confirmed_booking = await self.service.book_court(
             date=date,
             time_from=time_from,
             time_to=time_to,
-            court_id=court_id,
+            court_number=court_number,
             category_options_id=category_options_id,
             time_slot_id=time_slot_id,
         )
 
         return {
             "date": date,
-            "court_id": court_id,
+            "court_number": court_number,
             "time_from": time_from,
             "time_to": time_to,
             "confirmed_booking": confirmed_booking,

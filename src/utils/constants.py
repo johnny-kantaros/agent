@@ -35,3 +35,12 @@ TENNIS_LOGIN_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWit
 TENNIS_BASE_API_URL = "https://api.rec.us/v1"
 TENNIS_2FAC_SEND_URL = "https://api.rec.us/v1/users/mobile-totp/send"
 TENNIS_2FAC_VERIFY_URL = "https://api.rec.us/v1/users/mobile-totp/verify"
+
+
+SQUASH_COURT_ID_MAP = {
+    "1": "b9bceace-e2b3-448f-a7fc-4c96c806560c",
+    "2": "df598bbe-d342-4eae-abd0-cf8c4933ed4b",
+    "3": "60785a9e-feea-4226-8030-76eadb9fa5ea",
+    "4": "9964c7ea-8052-45a4-a446-dcf310e3e288",
+    "5": "424db108-5301-4045-96ce-d5e85324a200",
+}

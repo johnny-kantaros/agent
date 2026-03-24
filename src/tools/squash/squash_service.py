@@ -4,6 +4,8 @@ import uuid
 import httpx
 from dotenv import load_dotenv
 
+from src.utils.constants import SQUASH_COURT_ID_MAP
+
 load_dotenv()
 
 BASE_API_URL = "https://connect-api.bayclubs.io"
@@ -28,19 +30,31 @@ class SquashService:
         self.password = os.getenv("BAYCLUB_PASSWORD")
         self.subscription_key = "bac44a2d04b04413b6aea6d4e3aad294"
         self.client = httpx.AsyncClient()
+        self.session_id = str(uuid.uuid4())
 
     def _headers(self):
+        """Base headers without auth"""
         return {
             "Ocp-Apim-Subscription-Key": self.subscription_key,
             "User-Agent": "Mozilla/5.0",
             "Accept": "*/*",
             "Content-Type": "application/x-www-form-urlencoded",
             "Referer": "https://bayclubconnect.com/",
-            "X-SessionId": str(uuid.uuid4()),
+            "X-SessionId": self.session_id,
             "Request-Id": str(uuid.uuid4()),
         }
 
-    async def _login(self) -> None:
+    def _auth_headers(self):
+        """Headers including bearer token"""
+        headers = self._headers()
+        headers["Authorization"] = f"Bearer {self.token}"
+        headers["Content-Type"] = "application/json"
+        return headers
+
+    async def _login(self):
+        if self.token:
+            return  # reuse existing token
+
         payload = (
             f"client_id=connect20"
             f"&client_secret=connectSecret"
@@ -55,26 +69,14 @@ class SquashService:
             headers=self._headers(),
             content=payload,
         )
-
-        print(res.status_code, res.text)  # keep for debugging
-
         res.raise_for_status()
-        data = res.json()
-        self.token = data["access_token"]
+        self.token = res.json()["access_token"]
 
-    async def get_availability(
-        self,
-        date: str,
-        after_hour: int = 0,
-        before_hour: int = 24,
-    ):
+    async def get_availability(self, date: str, after_hour: int = 0, before_hour: int = 24):
         await self._login()
         res = await self.client.get(
             f"{BASE_API_URL}/court-booking/api/1.0/availability",
-            headers={
-                "Authorization": f"Bearer {self.token}",
-                "Ocp-Apim-Subscription-Key": self.subscription_key,
-            },
+            headers=self._auth_headers(),
             params={
                 "clubId": self.CLUB_ID,
                 "date": date,
@@ -83,21 +85,16 @@ class SquashService:
                 "timeSlotId": self.TIME_SLOT_ID,
             },
         )
-
         res.raise_for_status()
         data = res.json()
-
         club_data = data["clubsAvailabilities"][0]
 
-        # map courtId -> name
         court_map = {c["courtId"]: c["courtName"] for c in club_data["courts"]}
-
         slots = []
 
         for slot in club_data["availableTimeSlots"]:
             start_min = slot["fromInMinutes"]
             hour = start_min / 60
-
             if hour < after_hour or hour > before_hour:
                 continue
 
@@ -108,57 +105,42 @@ class SquashService:
                     "court_id": slot["courtId"],
                     "court": court_map.get(slot["courtId"], "Unknown"),
                     "time_of_day": slot["timeOfDay"],
+                    "time_slot_id": slot.get("courtSetupVersionId"),  # optional
                 }
             )
 
-        # sort by time (important for agent reasoning)
-        slots.sort(key=lambda x: x["time"])
-        return slots
+        return sorted(slots, key=lambda x: x["time"])
 
     async def book_court(
         self,
         date: str,
         time_from: int,
         time_to: int,
-        court_id: str,
-        category_options_id: str,
-        time_slot_id: str,
+        court_number: str,
+        category_options_id: str = "",
+        time_slot_id: str = "",
     ):
+        """Simple entry point to book a squash court"""
         await self._login()
 
-        booking = await self._create_booking(
-            date=date,
-            time_from=time_from,
-            time_to=time_to,
-            court_id=court_id,
-            category_options_id=category_options_id,
-            time_slot_id=time_slot_id,
+        court_id = SQUASH_COURT_ID_MAP[court_number]
+        category_options_id = category_options_id or self.CATEGORY_OPTIONS_ID
+        time_slot_id = time_slot_id or self.TIME_SLOT_ID
+
+        await self._create_booking(
+            date, time_from, time_to, court_id, category_options_id, time_slot_id
         )
-        print("Booking created:", booking)
-
         temp_bookings = await self._get_temporary_bookings()
-        print("Temporary bookings:", temp_bookings)
-
-        if not temp_bookings.get("courtBookings"):
+        if not temp_bookings.get("temporaryBooking"):
             raise ValueError("No temporary bookings found after creation")
 
-        booking_id = temp_bookings["courtBookings"][0]["id"]
-
+        booking_id = temp_bookings["temporaryBooking"]["courtBookingId"]
         confirmed = await self._confirm_booking(booking_id)
-        print("Booking confirmed:", confirmed)
-
         return confirmed
 
     async def _create_booking(
-        self,
-        date: str,
-        time_from: int,
-        time_to: int,
-        court_id: str,
-        category_options_id: str,
-        time_slot_id: str,
+        self, date, time_from, time_to, court_id, category_options_id, time_slot_id
     ):
-
         payload = {
             "clubId": self.CLUB_ID,
             "date": {"value": date, "date": date},
@@ -168,34 +150,60 @@ class SquashService:
             "categoryOptionsId": category_options_id,
             "timeSlotId": time_slot_id,
         }
-
         res = await self.client.post(
             f"{BASE_API_URL}/court-booking/api/1.0/courtbookings",
-            headers=self._headers(),
+            headers=self._auth_headers(),
             json=payload,
         )
-
         res.raise_for_status()
         return res.json()
 
     async def _get_temporary_bookings(self):
         res = await self.client.get(
             f"{BASE_API_URL}/court-booking/api/1.0/courtbookings/temporary",
-            headers=self._headers(),
+            headers=self._auth_headers(),
         )
-
         res.raise_for_status()
         return res.json()
 
     async def _confirm_booking(self, booking_id: str):
+        url = f"{BASE_API_URL}/court-booking/api/1.0/courtbookings/{booking_id}/confirm"
 
-        res = await self.client.post(
-            f"{BASE_API_URL}/court-booking/api/1.0/courtbookings/{booking_id}",
-            headers=self._headers(),
+        payload = {
+            "invitations": [],
+            "isVisibleToBuddies": True,
+        }
+
+        response = await self.client.put(
+            url,
+            headers=self._auth_headers(),
+            json=payload,
+        )
+        response.raise_for_status()
+
+        return await self._get_booking(booking_id)
+
+    async def _get_booking(self, booking_id: str):
+        url = f"{BASE_API_URL}/court-booking/api/1.0/courtbookings/{booking_id}"
+
+        response = await self.client.get(
+            url,
+            headers=self._auth_headers(),
         )
 
-        res.raise_for_status()
-        return res.json()
+        response.raise_for_status()
+        booking = response.json()
+        return {
+            "club": booking.get("club", {}).get("name"),
+            "court": booking.get("court", {}).get("name"),
+            "date": booking.get("date", {}).get("value"),
+            "time": f"{booking.get('fromInMinutes')}–{booking.get('toInMinutes')}",
+            "status": booking.get("status", {}).get("name"),
+            "players": [
+                f"{p.get('firstName', '')} {p.get('lastName', '')}".strip()
+                for p in booking.get("players", [])
+            ],
+        }
 
 
-squash_service = SquashService()  # Global
+squash_service = SquashService()
