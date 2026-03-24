@@ -30,7 +30,7 @@ class CheckCalendarAvailability(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         try:
             start_time = tool_input.get("start_time")
             end_time = tool_input.get("end_time")

@@ -7,21 +7,13 @@ class EchoTool(Tool):
     description = "Echoes back the exact message provided."
     parameters = {
         "type": "object",
-        "properties": {
-            "message": {
-                "type": "string",
-                "description": "The message to echo"
-            }
-        },
-        "required": ["message"]
+        "properties": {"message": {"type": "string", "description": "The message to echo"}},
+        "required": ["message"],
     }
-
 
     def __init__(self):
         self.service = EchoService()
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         message = tool_input.get("message", "")
-        return {
-            "message": self.service.echo(message)
-        }
+        return {"message": self.service.echo(message)}

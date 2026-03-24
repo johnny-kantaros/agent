@@ -65,7 +65,7 @@ class CreateCalendarEvent(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         try:
             # Required Fields
             title = tool_input.get("title")

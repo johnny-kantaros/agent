@@ -161,7 +161,7 @@ async def handle_telegram_update(update: dict[str, Any]) -> None:
     logger.info(f"Processing normal message for chat_id={chat_id}: {text}")
     async with AGENT_LOCK:
         try:
-            response = agent.execute(query=text)
+            response = await agent.execute(query=text)
             reply_text = response.get("response", "No response from agent.")
             logger.info(f"Agent response for chat_id={chat_id}: {reply_text}")
             await send_response_message(chat_id, reply_text)

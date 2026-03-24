@@ -41,7 +41,7 @@ class FindCalendarTimeSlot(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         try:
             duration_minutes = tool_input.get("duration_minutes")
             start_range = tool_input.get("start_range")
