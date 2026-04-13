@@ -4,7 +4,13 @@ from src.tools.tasks.task_service import TaskService
 
 class ListTasksTool(Tool):
     name = "list_tasks"
-    description = "List tasks for user."
+    description = """
+    List all tasks.
+    When returning tasks to the user, adhere to the following instructions:
+        1. Be as concise as possible.
+        2. Do not show task id or any empty fields.
+        3. Return as a structured list when possible.
+    """
 
     parameters = {
         "type": "object",

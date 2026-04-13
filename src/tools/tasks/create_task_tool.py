@@ -6,7 +6,10 @@ class CreateTaskTool(Tool):
     name = "create_task"
     description = """
     Create a new task with optional due date, details and reminder cadence.
-    The task name should be short and descriptive. Only include details if either provided or helpful.
+    Adhere to the following instructions:
+        1. The task name should be short and descriptive (only a few words). 
+        2. Only include details if provided by the user. If provided, they should also be stored very concisely.
+        3. Just make the task provided - do NOT ask for details, reminders, etc.
     """
 
     parameters = {
