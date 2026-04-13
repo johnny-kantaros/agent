@@ -22,3 +22,7 @@ primary_region = "lax"
 
 [deploy]
   strategy = "immediate"
+
+[mounts]
+  source = "tasks_data"
+  destination = "/data"
