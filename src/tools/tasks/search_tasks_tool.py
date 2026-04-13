@@ -3,6 +3,8 @@ from src.tools.tasks.task_service import TaskService
 
 
 class SearchTasksTool(Tool):
+    """This tool is not yet used"""
+
     name = "search_tasks"
     description = "Search for a specific task."
 
