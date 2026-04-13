@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any
 
 
 class Tool(ABC):
     name: str
     description: str
-    parameters: Dict[str, Any]
-
+    parameters: dict[str, Any]
 
     def schema(self):
 
@@ -15,10 +14,10 @@ class Tool(ABC):
             "function": {
                 "name": self.name,
                 "description": self.description,
-                "parameters": self.parameters
-            }
+                "parameters": self.parameters,
+            },
         }
 
     @abstractmethod
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         pass

@@ -50,7 +50,7 @@ class TennisCourtBookerInitialization(Tool):
     def __init__(self):
         self.service = tennis_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         reservation_id: str = self.service.init_reservation(
             court_name=tool_input["court_name"],
             court_number=tool_input["court_number"],

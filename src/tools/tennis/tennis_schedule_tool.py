@@ -42,7 +42,7 @@ class TennisScheduleChecker(Tool):
     def __init__(self):
         self.service = tennis_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         courts = tool_input.get("courts") or ["all"]  # default to all if none
         days = tool_input.get("days", 7)
         after_hour = tool_input.get("after_hour", 0)

@@ -7,10 +7,11 @@ from openai.types.chat import ChatCompletionUserMessageParam
 from src.planner.utils import create_system_message
 from src.tools.calendar.check_availability_tool import CheckCalendarAvailability
 from src.tools.calendar.create_event_tool import CreateCalendarEvent
-from src.tools.calendar.find_timeslot import FindCalendarTimeSlot
+from src.tools.calendar.find_timeslot_tool import FindCalendarTimeSlot
 from src.tools.calendar.get_calendar_events_tool import GetCalendarEvents
-from src.tools.examples.echo.echo_tool import EchoTool
 from src.tools.registry import TOOLS, register
+from src.tools.squash.squash_availability_tool import SquashCourtChecker
+from src.tools.squash.squash_booking_tool import SquashBookingTool
 from src.tools.tennis.confirm_tennis_court_reservation_tool import TennisCourtConfirmTool
 from src.tools.tennis.start_tennis_court_reservation_tool import TennisCourtBookerInitialization
 from src.tools.tennis.tennis_schedule_tool import TennisScheduleChecker
@@ -22,7 +23,6 @@ MAX_STEPS = 4
 MAX_HISTORY = 10
 
 
-register(EchoTool())
 register(TennisScheduleChecker())
 register(TennisCourtBookerInitialization())
 register(TennisCourtConfirmTool())
@@ -30,6 +30,8 @@ register(CreateCalendarEvent())
 register(GetCalendarEvents())
 register(FindCalendarTimeSlot())
 register(CheckCalendarAvailability())
+register(SquashCourtChecker())
+register(SquashBookingTool())
 
 
 def trim_messages(messages):
@@ -62,7 +64,7 @@ class Agent:
     def reset_history(self):
         self.messages = [create_system_message()]
 
-    def execute(self, query: str):
+    async def execute(self, query: str):
         if self._sleep:
             return {"response": "Agent sleeping: send /wakeup to wake the agent up"}
 
@@ -105,7 +107,7 @@ class Agent:
                         result = {"error": f"Tool '{tool_name}' not found"}
                     else:
                         try:
-                            result = tool_instance.run(args, user_context={})
+                            result = await tool_instance.run(args, user_context={})
                         except Exception as e:
                             result = {"error": str(e)}
 

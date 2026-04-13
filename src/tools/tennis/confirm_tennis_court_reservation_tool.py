@@ -30,7 +30,7 @@ class TennisCourtConfirmTool(Tool):
     def __init__(self):
         self.service = tennis_service
 
-    def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> dict:
         confirm_response: dict = self.service.confirm_reservation(
             confirmation_code=tool_input["verification_code"]
         )

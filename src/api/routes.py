@@ -23,10 +23,10 @@ class SendMessageRequest(BaseModel):
 
 
 @router.post("/message/{token}")
-def send_message(token: str, data: SendMessageRequest):
+async def send_message(token: str, data: SendMessageRequest):
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Forbidden")
-    response = agent.execute(data.message)
+    response = await agent.execute(data.message)
     return {"response": response}
 
 
