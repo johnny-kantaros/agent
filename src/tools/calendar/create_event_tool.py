@@ -1,5 +1,6 @@
-from typing import Any
+from collections.abc import AsyncGenerator
 
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.calendar.calendar_service import calendar_service
 
@@ -65,38 +66,56 @@ class CreateCalendarEvent(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
+
         try:
-            # Required Fields
+            yield ToolEvent(type="progress", message="Creating calendar event...")
+
             title = tool_input.get("title")
             start_time = tool_input.get("start_time")
-
-            # Optional Fields
             end_time = tool_input.get("end_time")
+
             duration_minutes = tool_input.get("duration_minutes")
             location = tool_input.get("location")
             description = tool_input.get("description")
             attendees = tool_input.get("attendees")
 
-            # Prefer user context timezone, fallback to input, then default
             timezone = (
                 user_context.get("timezone") or tool_input.get("timezone") or "America/Los_Angeles"
             )
 
-            # Basic validation
             if not title:
-                return {"status": "error", "message": "Missing required field: title"}
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"message": "Missing required field: title"},
+                    ),
+                )
+                return
 
             if not start_time:
-                return {"status": "error", "message": "Missing required field: start_time"}
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"message": "Missing required field: start_time"},
+                    ),
+                )
+                return
 
             if not end_time and not duration_minutes:
-                return {
-                    "status": "error",
-                    "message": "Provide either end_time or duration_minutes",
-                }
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"message": "Provide either end_time or duration_minutes"},
+                    ),
+                )
+                return
 
-            response: dict[str, Any] = self.service.create_event(
+            # ---------------- SERVICE CALL ----------------
+            event = self.service.create_event(
                 title=title,
                 start_time=start_time,
                 end_time=end_time,
@@ -107,10 +126,19 @@ class CreateCalendarEvent(Tool):
                 timezone=timezone,
             )
 
-            return response
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data=event,
+                ),
+            )
 
         except Exception as e:
-            return {
-                "status": "error",
-                "message": str(e),
-            }
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={"error": str(e)},
+                ),
+            )

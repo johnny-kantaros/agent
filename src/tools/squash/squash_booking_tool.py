@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.squash.squash_service import squash_service
 
@@ -40,30 +43,49 @@ class SquashBookingTool(Tool):
     def __init__(self):
         self.service = squash_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
-        """
-        Calls the full book_court sequence: login, create, get temp, confirm
-        """
-        date = tool_input["date"]
-        time_from = tool_input["time_from"]
-        time_to = tool_input["time_to"]
-        court_number = tool_input["court_number"]
-        category_options_id = tool_input.get("category_options_id")
-        time_slot_id = tool_input.get("time_slot_id")
+    async def run(
+        self,
+        tool_input: dict,
+        user_context: dict,
+    ) -> AsyncGenerator[ToolEvent, None]:
 
-        confirmed_booking = await self.service.book_court(
-            date=date,
-            time_from=time_from,
-            time_to=time_to,
-            court_number=court_number,
-            category_options_id=category_options_id,
-            time_slot_id=time_slot_id,
-        )
+        try:
+            date = tool_input["date"]
+            time_from = tool_input["time_from"]
+            time_to = tool_input["time_to"]
+            court_number = tool_input["court_number"]
 
-        return {
-            "date": date,
-            "court_number": court_number,
-            "time_from": time_from,
-            "time_to": time_to,
-            "confirmed_booking": confirmed_booking,
-        }
+            category_options_id = tool_input.get("category_options_id")
+            time_slot_id = tool_input.get("time_slot_id")
+
+            confirmed_booking = await self.service.book_court(
+                date=date,
+                time_from=time_from,
+                time_to=time_to,
+                court_number=court_number,
+                category_options_id=category_options_id,
+                time_slot_id=time_slot_id,
+            )
+
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "date": date,
+                        "court_number": court_number,
+                        "time_from": time_from,
+                        "time_to": time_to,
+                        "confirmed_booking": confirmed_booking,
+                    },
+                ),
+            )
+
+        except Exception as e:
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={"error": str(e)},
+                ),
+            )

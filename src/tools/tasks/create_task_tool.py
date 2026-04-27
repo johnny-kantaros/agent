@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.tasks.task_service import TaskService
 
@@ -20,7 +23,10 @@ class CreateTaskTool(Tool):
                 "type": "string",
                 "description": "Optional due date (ISO format preferred)",
             },
-            "details": {"type": "string", "description": "Optional task details"},
+            "details": {
+                "type": "string",
+                "description": "Optional task details",
+            },
             "reminder_cadence": {
                 "type": "string",
                 "description": "Reminder frequency (e.g. 'daily', 'weekly', 'none')",
@@ -32,11 +38,34 @@ class CreateTaskTool(Tool):
     def __init__(self):
         self.service = TaskService()
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(
+        self,
+        tool_input: dict,
+        user_context: dict,
+    ) -> AsyncGenerator[ToolEvent, None]:
+
         try:
             self.service.create_task(tool_input)
 
-            return {"success": True, "message": f"Task '{tool_input.get('task')}' created."}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "task": tool_input.get("task"),
+                        "message": f"Task '{tool_input.get('task')}' created.",
+                    },
+                ),
+            )
 
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={
+                        "error": str(e),
+                        "task": tool_input.get("task"),
+                    },
+                ),
+            )

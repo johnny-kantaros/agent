@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.tennis.tennis_service import tennis_service
 from src.utils.constants import COURTS
@@ -31,12 +34,18 @@ class TennisCourtBookerInitialization(Tool):
                 "type": "integer",
                 "description": "Court number at the facility (e.g. 1,2,3,4).",
             },
-            "date": {"type": "string", "description": "Reservation date in YYYY-MM-DD format"},
+            "date": {
+                "type": "string",
+                "description": "Reservation date in YYYY-MM-DD format",
+            },
             "start_time": {
                 "type": "string",
                 "description": "Start time in HH:MM:SS military format.",
             },
-            "end_time": {"type": "string", "description": "End time in HH:MM:SS military format."},
+            "end_time": {
+                "type": "string",
+                "description": "End time in HH:MM:SS military format.",
+            },
             "reservation_id": {
                 "type": "string",
                 "description": (
@@ -44,20 +53,54 @@ class TennisCourtBookerInitialization(Tool):
                 ),
             },
         },
-        "required": ["court_name", "court_number", "date", "start_time", "end_time"],
+        "required": [
+            "court_name",
+            "court_number",
+            "date",
+            "start_time",
+            "end_time",
+        ],
     }
 
     def __init__(self):
         self.service = tennis_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
-        reservation_id: str = self.service.init_reservation(
-            court_name=tool_input["court_name"],
-            court_number=tool_input["court_number"],
-            date=tool_input["date"],
-            start_time=tool_input["start_time"],
-            end_time=tool_input["end_time"],
-        )
-        return {
-            "response": f"The reservation process has been initiated (reservation id: {reservation_id}). A confirmation code was sent to the user. Provide that code to continue and complete the reservation."
-        }
+    async def run(
+        self,
+        tool_input: dict,
+        user_context: dict,
+    ) -> AsyncGenerator[ToolEvent, None]:
+
+        try:
+            reservation_id: str = self.service.init_reservation(
+                court_name=tool_input["court_name"],
+                court_number=tool_input["court_number"],
+                date=tool_input["date"],
+                start_time=tool_input["start_time"],
+                end_time=tool_input["end_time"],
+            )
+
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "reservation_id": reservation_id,
+                        "message": (
+                            "The reservation process has been initiated. "
+                            "A confirmation code was sent to the user."
+                        ),
+                    },
+                ),
+            )
+
+        except Exception as e:
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={
+                        "error": str(e),
+                    },
+                ),
+            )

@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.tasks.task_service import TaskService
 
@@ -26,11 +29,32 @@ class ListTasksTool(Tool):
     def __init__(self):
         self.service = TaskService()
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(
+        self,
+        tool_input: dict,
+        user_context: dict,
+    ) -> AsyncGenerator[ToolEvent, None]:
+
         try:
             tasks = self.service.list_tasks(include_completed=tool_input["only_open_status"])
 
-            return {"success": True, "tasks": tasks}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "tasks": tasks,
+                    },
+                ),
+            )
 
         except Exception as e:
-            return {"success": False, "error": str(e)}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={
+                        "error": str(e),
+                    },
+                ),
+            )

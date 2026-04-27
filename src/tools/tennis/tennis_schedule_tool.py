@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.tennis.tennis_service import tennis_service
 from src.utils.constants import COURTS
@@ -7,7 +10,6 @@ class TennisScheduleChecker(Tool):
     name = "tennis_schedule_checker"
     description = "Checks the schedule of one or more tennis courts."
 
-    # Expose allowed court names to the LLM
     ALLOWED_COURTS = list(COURTS.keys())
 
     parameters = {
@@ -42,14 +44,33 @@ class TennisScheduleChecker(Tool):
     def __init__(self):
         self.service = tennis_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
-        courts = tool_input.get("courts") or ["all"]  # default to all if none
-        days = tool_input.get("days", 7)
-        after_hour = tool_input.get("after_hour", 0)
-        before_hour = tool_input.get("before_hour", 24)
+    async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
+        try:
+            courts = tool_input.get("courts") or ["all"]
+            days = tool_input.get("days", 7)
+            after_hour = tool_input.get("after_hour", 0)
+            before_hour = tool_input.get("before_hour", 24)
 
-        availability = self.service.check_availability(
-            courts=courts, days=days, after_hour=after_hour, before_hour=before_hour
-        )
+            availability = self.service.check_availability(
+                courts=courts,
+                days=days,
+                after_hour=after_hour,
+                before_hour=before_hour,
+            )
 
-        return {"availability": availability}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={"availability": availability},
+                ),
+            )
+
+        except Exception as e:
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={"error": str(e)},
+                ),
+            )

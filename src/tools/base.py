@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from typing import Any
+
+from src.models.interface import ToolEvent
 
 
 class Tool(ABC):
@@ -8,7 +11,6 @@ class Tool(ABC):
     parameters: dict[str, Any]
 
     def schema(self):
-
         return {
             "type": "function",
             "function": {
@@ -19,5 +21,11 @@ class Tool(ABC):
         }
 
     @abstractmethod
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
-        pass
+    def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
+        """
+        Streaming tool interface.
+
+        Yields:
+            ToolEvent(progress | result)
+        """
+        raise NotImplementedError

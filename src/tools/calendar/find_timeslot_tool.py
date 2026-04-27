@@ -1,5 +1,7 @@
+from collections.abc import AsyncGenerator
 from datetime import datetime, timedelta
 
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.calendar.calendar_service import calendar_service
 
@@ -41,19 +43,24 @@ class FindCalendarTimeSlot(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
+
         try:
-            duration_minutes = tool_input.get("duration_minutes")
+            duration_minutes = tool_input.get("duration_minutes") or 15
             start_range = tool_input.get("start_range")
             end_range = tool_input.get("end_range")
             step_minutes = tool_input.get("step_minutes", 15)
             calendar_id = tool_input.get("calendar_id") or "primary"
 
-            # Basic validation
-            if duration_minutes is None:
-                return {"status": "error", "message": "Missing required field: duration_minutes"}
-            if not start_range or not end_range:
-                return {"status": "error", "message": "Both start_range and end_range are required"}
+            if not isinstance(start_range, str) or not isinstance(end_range, str):
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"error": "Invalid or missing time range"},
+                    ),
+                )
+                return
 
             start_dt = datetime.fromisoformat(start_range)
             end_dt = datetime.fromisoformat(end_range)
@@ -70,20 +77,37 @@ class FindCalendarTimeSlot(Tool):
                 )
 
                 if availability.get("available"):
-                    return {
-                        "status": "success",
-                        "available": True,
-                        "suggested_start_time": current_start.isoformat(),
-                        "suggested_end_time": current_end.isoformat(),
-                    }
+                    yield ToolEvent(
+                        type="result",
+                        result=ToolCallResult(
+                            status="success",
+                            data={
+                                "available": True,
+                                "suggested_start_time": current_start.isoformat(),
+                                "suggested_end_time": current_end.isoformat(),
+                            },
+                        ),
+                    )
 
                 current_start += delta
 
-            return {
-                "status": "success",
-                "available": False,
-                "message": "No available slot in range",
-            }
+            # ---------------- NO SLOT FOUND ----------------
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "available": False,
+                        "message": "No available slot in range",
+                    },
+                ),
+            )
 
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={"error": str(e)},
+                ),
+            )
