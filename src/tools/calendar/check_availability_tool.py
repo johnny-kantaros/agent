@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.calendar.calendar_service import calendar_service
 
@@ -11,6 +14,7 @@ class CheckCalendarAvailability(Tool):
         If the user asks for "the weekend of x day", assume Friday, Saturday, and Sunday
         closest to whatever day they're referring to.
         """
+    progress_indicator_message = "Checking calendar availability..."
 
     parameters = {
         "type": "object",
@@ -30,15 +34,25 @@ class CheckCalendarAvailability(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
         try:
             start_time = tool_input.get("start_time")
             end_time = tool_input.get("end_time")
 
             if not start_time:
-                return {"status": "error", "message": "Missing required field: start_time"}
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure", data={"message": "Missing required field: start_time"}
+                    ),
+                )
             if not end_time:
-                return {"status": "error", "message": "Missing required field: end_time"}
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure", data={"message": "Missing required field: end_time"}
+                    ),
+                )
 
             # Call service to check availability
             availability = self.service.check_availability(
@@ -58,11 +72,24 @@ class CheckCalendarAvailability(Tool):
                         }
                     )
 
-            return {
-                "status": "success",
-                "available": availability.get("available"),
-                "conflicts": conflicts,
-            }
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={
+                        "available": availability.get("available"),
+                        "conflicts": conflicts,
+                    },
+                ),
+            )
 
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={
+                        "error": str(e),
+                    },
+                ),
+            )

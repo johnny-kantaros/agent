@@ -1,5 +1,7 @@
+from collections.abc import AsyncGenerator
 from typing import Any
 
+from src.models.interface import ToolCallResult, ToolEvent
 from src.tools.base import Tool
 from src.tools.calendar.calendar_service import calendar_service
 
@@ -11,6 +13,7 @@ class GetCalendarEvents(Tool):
     check for the next 7 days. If the user asks for "the weekend of x day", assume Friday, Saturday, and Sunday
     closest to whatever day they're referring to.
     """
+    progress_indicator_message = "Fetching calendar events..."
 
     parameters = {
         "type": "object",
@@ -34,19 +37,36 @@ class GetCalendarEvents(Tool):
     def __init__(self):
         self.service = calendar_service
 
-    async def run(self, tool_input: dict, user_context: dict) -> dict:
+    async def run(
+        self,
+        tool_input: dict,
+        user_context: dict,
+    ) -> AsyncGenerator[ToolEvent, None]:
+
         try:
-            # Required Fields
             start_time = tool_input.get("start_time")
             end_time = tool_input.get("end_time")
+            query = tool_input.get("title")
 
             if not start_time:
-                return {"status": "error", "message": "Missing required field: start_time"}
-            if not end_time:
-                return {"status": "error", "message": "Missing required field: end_time"}
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"message": "Missing required field: start_time"},
+                    ),
+                )
+                return
 
-            # Optional filters
-            query = tool_input.get("title")  # search by title
+            if not end_time:
+                yield ToolEvent(
+                    type="result",
+                    result=ToolCallResult(
+                        status="failure",
+                        data={"message": "Missing required field: end_time"},
+                    ),
+                )
+                return
 
             events: list[dict[str, Any]] = self.service.list_events(
                 time_min=start_time,
@@ -55,7 +75,6 @@ class GetCalendarEvents(Tool):
                 max_results=100,
             )
 
-            # Return structured output for agent
             formatted_events = [
                 {
                     "title": ev.get("summary"),
@@ -69,7 +88,19 @@ class GetCalendarEvents(Tool):
                 for ev in events
             ]
 
-            return {"status": "success", "events": formatted_events}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="success",
+                    data={"events": formatted_events},
+                ),
+            )
 
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            yield ToolEvent(
+                type="result",
+                result=ToolCallResult(
+                    status="failure",
+                    data={"error": str(e)},
+                ),
+            )
