@@ -153,14 +153,11 @@ async def handle_message_request(ctx: RequestContext, agent: Agent, client: Tele
     try:
         async with AGENT_LOCK:
             async for event in agent.run_stream(query=ctx.text):
-                event_type = event.get("type")
-                message = event.get("message", "")
+                if event.type == "progress":
+                    await renderer.update(event.message)
 
-                if event_type == "progress":
-                    await renderer.update(message)
-
-                elif event_type == "final":
-                    await renderer.finalize(message)
+                elif event.type == "final":
+                    await renderer.finalize(event.message)
                     finalized = True
                     break
 

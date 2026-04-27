@@ -26,8 +26,10 @@ class SendMessageRequest(BaseModel):
 async def send_message(token: str, data: SendMessageRequest):
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Forbidden")
-    response = await agent.execute(data.message)
-    return {"response": response}
+    async for event in agent.run_stream(data.message):
+        if event.type == "final":
+            return {"response": event.message}
+    return {}
 
 
 # --- Telegram webhook ---

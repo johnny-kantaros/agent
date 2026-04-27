@@ -27,4 +27,3 @@ class ToolEvent:
 class AgentUpdate:
     type: Literal["progress", "final"]
     message: str
-    data: Any = None

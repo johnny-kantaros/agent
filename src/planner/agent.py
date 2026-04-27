@@ -1,10 +1,11 @@
 import json
 import logging
+from dataclasses import asdict
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 
-from src.models.interface import AgentUpdate
+from src.models.interface import AgentUpdate, ToolCallResult
 from src.planner.tool_executor import ToolExecutor
 from src.planner.utils import create_system_message
 from src.tools.registry import TOOLS
@@ -77,7 +78,7 @@ class Agent:
                 tool_call = message.tool_calls[0]
                 tool_call_id = tool_call.id
 
-                tool_result = None
+                tool_result: ToolCallResult | None = None
 
                 async for event in self.tool_executor.run_tool(tool_call):
                     if event.type == "progress":
@@ -87,13 +88,16 @@ class Agent:
                         tool_result = event.result
 
                 if tool_result is None:
-                    tool_result = {"error": "Tool did not return result"}
+                    tool_result = ToolCallResult(
+                        status="failure",
+                        data={"message": "The tool did not complete successfully"},
+                    )
 
                 self.messages.append(
                     {
                         "role": "tool",
                         "tool_call_id": tool_call_id,
-                        "content": json.dumps(tool_result),
+                        "content": json.dumps(asdict(tool_result)),
                     }
                 )
 

@@ -57,6 +57,8 @@ class TennisScheduleChecker(Tool):
                 after_hour=after_hour,
                 before_hour=before_hour,
             )
+            if not availability:
+                availability = "There is no availability for this timeframe"
 
             yield ToolEvent(
                 type="result",
