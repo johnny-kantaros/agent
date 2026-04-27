@@ -138,7 +138,6 @@ async def handle_telegram_update(update: dict[str, Any]) -> None:
 
     # async execution
     _safe_create_task(handle_message_request(ctx, agent=agent, client=TELEGRAM_CLIENT))
-
     LAST_UPDATE_ID = update_id
 
 
@@ -162,8 +161,8 @@ async def handle_message_request(ctx: RequestContext, agent: Agent, client: Tele
                     break
 
         if not finalized:
-            await renderer.finalize("✅ Done")
+            await renderer.finalize("Something went wrong.")
 
     except Exception as e:
         logger.error(f"Agent error: {e}")
-        await renderer.finalize("❌ Something went wrong.")
+        await renderer.finalize("Something went wrong.")

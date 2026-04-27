@@ -20,7 +20,7 @@ class TelegramProgressRenderer:
         self._running: bool = False
 
     async def start(self):
-        msg = await self.client.send_message(self.chat_id, "🤖 Starting...")
+        msg = await self.client.send_message(self.chat_id, "Analyzing...")
 
         self.message_id = msg["message_id"]
         self._running = True
