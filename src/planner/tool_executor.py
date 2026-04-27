@@ -2,6 +2,7 @@ import json
 import logging
 
 from src.models.interface import ToolCallResult, ToolEvent
+from src.tools.base import Tool
 from src.tools.registry import TOOLS
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,8 @@ class ToolExecutor:
         tool = TOOLS.get(tool_name)
 
         if tool:
+            # Yield the default progress indicator
+            yield self._build_progress_indicator_event(tool=tool)
             async for event in tool.run(args, user_context=user_context):
                 yield event
         else:
@@ -35,3 +38,6 @@ class ToolExecutor:
                     },
                 ),
             )
+
+    def _build_progress_indicator_event(self, tool: Tool):
+        return ToolEvent(type="progress", message=tool.progress_indicator_message or "Calling tool")
