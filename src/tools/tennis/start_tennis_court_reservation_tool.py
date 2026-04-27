@@ -8,7 +8,6 @@ from src.utils.constants import COURTS
 
 class TennisCourtBookerInitialization(Tool):
     name = "start_tennis_court_reservation"
-
     description = """
     Creates a pending tennis court reservation for a specific court, date, and time.
 
@@ -19,6 +18,7 @@ class TennisCourtBookerInitialization(Tool):
 
     Use this tool when the user clearly wants to book a specific tennis court and time.
     """
+    progress_indicator_message = "Initializing tennis court reservation..."
 
     ALLOWED_COURTS = list(COURTS.keys())
 

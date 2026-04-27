@@ -8,6 +8,7 @@ from src.models.interface import ToolEvent
 class Tool(ABC):
     name: str
     description: str
+    progress_indicator_message: str
     parameters: dict[str, Any]
 
     def schema(self):

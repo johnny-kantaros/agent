@@ -14,6 +14,7 @@ class CreateTaskTool(Tool):
         2. Only include details if provided by the user. If provided, they should also be stored very concisely.
         3. Just make the task provided - do NOT ask for details, reminders, etc.
     """
+    progress_indicator_message = "Creating task..."
 
     parameters = {
         "type": "object",

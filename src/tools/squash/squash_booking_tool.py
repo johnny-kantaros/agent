@@ -11,6 +11,7 @@ class SquashBookingTool(Tool):
     Call this tool when the user wants to book a squash court.
     Squash courts are always booked for 45 minutes.
     """
+    progress_indicator_message = "Booking squash court..."
 
     parameters = {
         "type": "object",

@@ -8,6 +8,7 @@ from src.tools.squash.squash_service import squash_service
 class SquashCourtChecker(Tool):
     name = "squash_court_checker"
     description = "Checks available squash courts for a given date and optional time range"
+    progress_indicator_message = "Checking squash availability..."
 
     parameters = {
         "type": "object",

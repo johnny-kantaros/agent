@@ -11,7 +11,7 @@ class CompleteTaskTool(Tool):
     Mark a task as complete or closed.
     Always call list_tasks before this tool to get the correct task id.
     """
-
+    progress_indicator_message = "Marking task as complete..."
     parameters = {
         "type": "object",
         "properties": {

@@ -9,6 +9,7 @@ from src.utils.constants import COURTS
 class TennisScheduleChecker(Tool):
     name = "tennis_schedule_checker"
     description = "Checks the schedule of one or more tennis courts."
+    progress_indicator_message = "Checking tennis court schedule..."
 
     ALLOWED_COURTS = list(COURTS.keys())
 

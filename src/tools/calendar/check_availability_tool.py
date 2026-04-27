@@ -14,6 +14,7 @@ class CheckCalendarAvailability(Tool):
         If the user asks for "the weekend of x day", assume Friday, Saturday, and Sunday
         closest to whatever day they're referring to.
         """
+    progress_indicator_message = "Checking calendar availability..."
 
     parameters = {
         "type": "object",

@@ -10,6 +10,7 @@ class SearchTasksTool(Tool):
 
     name = "search_tasks"
     description = "Search for a specific task."
+    progress_indicator_message = "Searching tasks..."
 
     parameters = {
         "type": "object",

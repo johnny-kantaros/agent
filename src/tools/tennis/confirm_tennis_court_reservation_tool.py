@@ -8,12 +8,12 @@ from src.utils.constants import COURTS
 
 class TennisCourtConfirmTool(Tool):
     name = "confirm_tennis_court_reservation"
-
     description = """
     Confirms a pending tennis court reservation using the SMS verification code.
 
     This finalizes the reservation created by start_tennis_court_reservation.
     """
+    progress_indicator_message = "Confirming tennis court reservation..."
 
     ALLOWED_COURTS = list(COURTS.keys())
 

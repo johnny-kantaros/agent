@@ -8,6 +8,7 @@ from src.tools.calendar.calendar_service import calendar_service
 class CreateCalendarEvent(Tool):
     name = "create_calendar_event"
     description = "Creates a calendar event."
+    progress_indicator_message = "Creating calendar event..."
 
     parameters = {
         "type": "object",
