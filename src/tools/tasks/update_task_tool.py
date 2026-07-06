@@ -11,7 +11,6 @@ class UpdateTaskTool(Tool):
     Update a task by its ID with partial field updates.
     Always call list_tasks before this tool to get the correct task id.
     """
-    progress_indicator_message = "Updating task..."
 
     parameters = {
         "type": "object",

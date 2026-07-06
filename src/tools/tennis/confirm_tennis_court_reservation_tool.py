@@ -13,7 +13,6 @@ class TennisCourtConfirmTool(Tool):
 
     This finalizes the reservation created by start_tennis_court_reservation.
     """
-    progress_indicator_message = "Confirming tennis court reservation..."
 
     ALLOWED_COURTS = list(COURTS.keys())
 

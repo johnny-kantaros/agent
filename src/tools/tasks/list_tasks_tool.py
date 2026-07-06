@@ -14,7 +14,6 @@ class ListTasksTool(Tool):
         2. Do not show task id or any empty fields.
         3. Return as a structured list when possible.
     """
-    progress_indicator_message = "Listing tasks..."
 
     parameters = {
         "type": "object",

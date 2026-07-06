@@ -1,125 +1,110 @@
+import asyncio
 import json
 import logging
 from dataclasses import asdict
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 
 from src.models.interface import AgentUpdate, ToolCallResult
-from src.planner.tool_executor import ToolExecutor
-from src.planner.utils import create_system_message
+from src.planner.context import build_system_prompt, trim_messages
 from src.tools.registry import TOOLS
 
-client = OpenAI()
+client = AsyncOpenAI()
 logging.basicConfig(level=logging.INFO)
 
 MAX_STEPS = 4
-MAX_HISTORY = 10
+
+_messages: list = [build_system_prompt()]
+_tool_schemas = [tool.schema() for tool in TOOLS.values()]
 
 
-def trim_messages(messages):
-    system = messages[0]
-    rest = messages[1:]
-    trimmed = rest[-(MAX_HISTORY - 1) :]
-
-    while trimmed and trimmed[0]["role"] == "tool":
-        trimmed = trimmed[1:]
-
-    return [system] + trimmed
+def reset_history():
+    global _messages
+    _messages = [build_system_prompt()]
 
 
-class Agent:
-    def __init__(self):
-        self.messages: list = [create_system_message()]
-        self.tool_schemas = [tool.schema() for tool in TOOLS.values()]
-        self._sleep = False
-        self.tool_executor = ToolExecutor()
+async def _run_tool(tool_call) -> ToolCallResult:
+    tool_name = tool_call.function.name
 
-    def sleep(self):
-        self._sleep = True
+    try:
+        args = json.loads(tool_call.function.arguments)
+    except json.JSONDecodeError:
+        args = {}
 
-    def wakeup(self):
-        self._sleep = False
+    tool = TOOLS.get(tool_name)
 
-    def reset_history(self):
-        self.messages = [create_system_message()]
+    if not tool:
+        return ToolCallResult(status="failure", data={"message": "Tool does not exist"})
 
-    async def run_stream(self, query: str):
-        if self._sleep:
-            yield AgentUpdate(
-                type="final", message="Agent sleeping: send /wakeup to wake the agent up"
+    args.pop("_status", None)
+
+    async for event in tool.run(args, user_context={}):
+        if event.type == "result" and event.result:
+            return event.result
+
+    return ToolCallResult(status="failure", data={"message": "Tool did not return a result"})
+
+
+async def _execute_tool_calls(tool_calls):
+    for tc in tool_calls:
+        try:
+            if status := json.loads(tc.function.arguments).get("_status"):
+                yield AgentUpdate(type="progress", message=status)
+        except json.JSONDecodeError:
+            pass
+
+    async def collect(tc):
+        return tc.id, await _run_tool(tc)
+
+    for tool_call_id, result in await asyncio.gather(*[collect(tc) for tc in tool_calls]):
+        yield tool_call_id, result
+
+
+async def run_stream(query: str):
+    global _messages
+
+    _messages[0] = build_system_prompt()
+    _messages.append(ChatCompletionUserMessageParam(role="user", content=query))
+
+    for _ in range(MAX_STEPS):
+        _messages = trim_messages(_messages)
+
+        logging.info("Messages:\n%s", json.dumps(_messages, indent=2, default=str))
+
+        response = await client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=_messages,
+            tools=_tool_schemas,
+        )
+        message = response.choices[0].message
+
+        if message.tool_calls:
+            _messages.append(
+                {
+                    "role": "assistant",
+                    "content": message.content or "",
+                    "tool_calls": message.tool_calls,
+                }
             )
-            return
 
-        self.messages[0] = create_system_message()
-        self.messages.append(ChatCompletionUserMessageParam(role="user", content=query))
-
-        for _ in range(MAX_STEPS):
-            self.messages = trim_messages(self.messages)
-
-            logging.info("Messages:\n%s", json.dumps(self.messages, indent=2, default=str))
-
-            response = client.chat.completions.create(
-                model="gpt-5-mini",
-                messages=self.messages,
-                tools=self.tool_schemas,
-            )
-            message = response.choices[0].message
-
-            if message.tool_calls:
-                self.messages.append(
-                    {
-                        "role": "assistant",
-                        "content": message.content or "",
-                        "tool_calls": message.tool_calls,
-                    }
-                )
-
-                tool_call = message.tool_calls[0]
-                tool_call_id = tool_call.id
-
-                tool_result: ToolCallResult | None = None
-
-                async for event in self.tool_executor.run_tool(tool_call):
-                    if event.type == "progress":
-                        yield AgentUpdate(type="progress", message=event.message)
-
-                    elif event.type == "result":
-                        tool_result = event.result
-
-                if tool_result is None:
-                    tool_result = ToolCallResult(
-                        status="failure",
-                        data={"message": "The tool did not complete successfully"},
+            async for event in _execute_tool_calls(message.tool_calls):
+                if isinstance(event, AgentUpdate):
+                    yield event
+                else:
+                    tool_call_id, tool_result = event
+                    _messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call_id,
+                            "content": json.dumps(asdict(tool_result)),
+                        }
                     )
 
-                self.messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call_id,
-                        "content": json.dumps(asdict(tool_result)),
-                    }
-                )
+            continue
 
-                continue
+        _messages.append({"role": "assistant", "content": message.content or ""})
+        yield AgentUpdate(type="final", message=message.content or "")
+        return
 
-            # If there are no tool calls, yield final response
-            yield await self._process_final_response(message)
-            return
-
-        yield AgentUpdate(type="final", message="Sorry, something went wrong.")
-
-    async def _process_final_response(self, message):
-        final_text = message.content or ""
-
-        self.messages.append(
-            {
-                "role": "assistant",
-                "content": final_text,
-            }
-        )
-
-        return AgentUpdate(type="final", message=final_text)
-
-
-agent = Agent()
+    yield AgentUpdate(type="final", message="Sorry, something went wrong.")

@@ -12,7 +12,6 @@ class FindCalendarTimeSlot(Tool):
         "Find the next available time slot of a given duration within a specified time range. "
         "Returns the suggested start and end times or indicates no slot is available."
     )
-    progress_indicator_message = "Finding calendar time slot..."
 
     parameters = {
         "type": "object",

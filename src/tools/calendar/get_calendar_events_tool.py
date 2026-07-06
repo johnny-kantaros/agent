@@ -13,7 +13,6 @@ class GetCalendarEvents(Tool):
     check for the next 7 days. If the user asks for "the weekend of x day", assume Friday, Saturday, and Sunday
     closest to whatever day they're referring to.
     """
-    progress_indicator_message = "Fetching calendar events..."
 
     parameters = {
         "type": "object",
