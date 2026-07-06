@@ -2,6 +2,7 @@ from src.tools.calendar.check_availability_tool import CheckCalendarAvailability
 from src.tools.calendar.create_event_tool import CreateCalendarEvent
 from src.tools.calendar.find_timeslot_tool import FindCalendarTimeSlot
 from src.tools.calendar.get_calendar_events_tool import GetCalendarEvents
+from src.tools.flights.flight_search_tool import FlightSearchTool
 from src.tools.squash.squash_availability_tool import SquashCourtChecker
 from src.tools.squash.squash_booking_tool import SquashBookingTool
 from src.tools.tasks.complete_task import CompleteTaskTool
@@ -32,6 +33,7 @@ register(FindCalendarTimeSlot())
 register(CheckCalendarAvailability())
 register(SquashCourtChecker())
 register(SquashBookingTool())
+register(FlightSearchTool())
 register(ListTasksTool())
 register(CreateTaskTool())
 register(UpdateTaskTool())
