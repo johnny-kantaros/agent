@@ -3,6 +3,9 @@ from src.tools.calendar.create_event_tool import CreateCalendarEvent
 from src.tools.calendar.find_timeslot_tool import FindCalendarTimeSlot
 from src.tools.calendar.get_calendar_events_tool import GetCalendarEvents
 from src.tools.flights.flight_search_tool import FlightSearchTool
+from src.tools.gmail.gmail_draft_tool import GmailDraftTool
+from src.tools.gmail.gmail_manage_tool import GmailManageTool
+from src.tools.gmail.gmail_search_tool import GmailSearchTool
 from src.tools.squash.squash_availability_tool import SquashCourtChecker
 from src.tools.squash.squash_booking_tool import SquashBookingTool
 from src.tools.tasks.complete_task import CompleteTaskTool
@@ -34,6 +37,9 @@ register(CheckCalendarAvailability())
 register(SquashCourtChecker())
 register(SquashBookingTool())
 register(FlightSearchTool())
+register(GmailSearchTool())
+register(GmailDraftTool())
+register(GmailManageTool())
 register(ListTasksTool())
 register(CreateTaskTool())
 register(UpdateTaskTool())
