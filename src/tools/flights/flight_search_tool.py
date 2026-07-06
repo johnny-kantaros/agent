@@ -33,7 +33,6 @@ class FlightSearchTool(Tool):
     Supports a single outbound date or a date range (also searched in parallel).
     Results are sorted by price. Southwest Airlines is not included — direct users to southwest.com.
     """
-    progress_indicator_message = "Searching for flights..."
 
     parameters = {
         "type": "object",

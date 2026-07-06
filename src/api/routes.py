@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from src.integrations.telegram.webhook import handle_telegram_update
-from src.planner.agent import agent
+from src.planner import agent
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)

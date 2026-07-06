@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from src.integrations.telegram.client import TelegramClient
 from src.integrations.telegram.telegram_progress_renderer import TelegramProgressRenderer
 from src.models.interface import RequestContext
-from src.planner.agent import Agent, agent
+from src.planner import agent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -97,22 +97,10 @@ def _extract_request_context(update: dict[str, Any]) -> RequestContext:
     )
 
 
-async def _handle_special_commands(
-    ctx: RequestContext, agent: Agent, client: TelegramClient
-) -> bool:
+async def _handle_special_commands(ctx: RequestContext, client: TelegramClient) -> bool:
     if ctx.text == "/clear":
         agent.reset_history()
         await client.send_message(ctx.chat_id, "Chat history cleared.")
-        return True
-
-    if ctx.text == "/sleep":
-        agent.sleep()
-        await client.send_message(ctx.chat_id, "Agent sleeping.")
-        return True
-
-    if ctx.text == "/wakeup":
-        agent.wakeup()
-        await client.send_message(ctx.chat_id, "Agent activated.")
         return True
 
     return False
@@ -132,16 +120,16 @@ async def handle_telegram_update(update: dict[str, Any]) -> None:
         return
 
     # commands
-    if await _handle_special_commands(ctx, agent, TELEGRAM_CLIENT):
+    if await _handle_special_commands(ctx, TELEGRAM_CLIENT):
         LAST_UPDATE_ID = update_id
         return
 
     # async execution
-    _safe_create_task(handle_message_request(ctx, agent=agent, client=TELEGRAM_CLIENT))
+    _safe_create_task(handle_message_request(ctx, client=TELEGRAM_CLIENT))
     LAST_UPDATE_ID = update_id
 
 
-async def handle_message_request(ctx: RequestContext, agent: Agent, client: TelegramClient) -> None:
+async def handle_message_request(ctx: RequestContext, client: TelegramClient) -> None:
     renderer = TelegramProgressRenderer(client, ctx.chat_id)
 
     await client.send_chat_action(ctx.chat_id, "typing")
@@ -151,7 +139,7 @@ async def handle_message_request(ctx: RequestContext, agent: Agent, client: Tele
 
     try:
         async with AGENT_LOCK:
-            async for event in agent.run_stream(query=ctx.text):
+            async for event in agent.run_stream(ctx.text):
                 if event.type == "progress":
                     await renderer.update(event.message)
 

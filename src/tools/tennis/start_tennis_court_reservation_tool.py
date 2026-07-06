@@ -18,7 +18,6 @@ class TennisCourtBookerInitialization(Tool):
 
     Use this tool when the user clearly wants to book a specific tennis court and time.
     """
-    progress_indicator_message = "Initializing tennis court reservation..."
 
     ALLOWED_COURTS = list(COURTS.keys())
 
