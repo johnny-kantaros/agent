@@ -4,16 +4,17 @@ A conversational AI agent that automates personal tasks through a Telegram inter
 
 ## Features
 
-- **Calendar**: Check availability, find time slots, create events, view upcoming items
-- **Tennis Booking**: Check schedules, initiate and confirm reservations
+- **Gmail**: Search, read, draft, and manage emails
+- **Calendar**: Check availability, find time slots, create and view events
+- **Tennis Booking**: Check schedules, initiate and confirm court reservations
 - **Squash Booking**: Check Bay Club availability and book courts
-- **Tasks**: Create, update, list, search, and complete tasks with persistent storage
-- **Telegram Integration**: Interact via Telegram with webhook support
-- **Session Management**: Chat history and sleep/wakeup commands
+- **Flights**: Search for flights
+- **Tasks**: Create, update, list, and complete tasks with persistent SQLite storage
+- **Telegram**: Webhook-based integration with per-chat session management
 
 ## Tech Stack
 
-Python 3.11 • FastAPI • OpenAI GPT-5-mini • SQLite • Google Calendar API • Fly.io
+Python 3.11 • FastAPI • OpenAI GPT-5-mini • SQLite • Google APIs • Fly.io
 
 ## Setup
 
@@ -40,6 +41,25 @@ uvicorn src.main:app --reload --port 8000
 fly deploy
 ```
 
+## Testing Locally via Postman
+
+1. Create a session:
+```
+POST /sessions/{token}
+→ {"session_id": "..."}
+```
+
+2. Send a message:
+```
+POST /sessions/{session_id}/message/{token}
+{"message": "..."}
+```
+
+3. Delete a session:
+```
+DELETE /sessions/{session_id}/{token}
+```
+
 ## Testing Telegram Locally
 
 1. Expose local server:
@@ -50,27 +70,12 @@ ngrok http 8000
 2. Set webhook:
 ```bash
 curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
-     -d "url=<NGROK_URL>/telegram/webhook"
-```
-
-## Debugging
-
-**View logs:**
-```bash
-# Local: logs appear in terminal
-# Fly.io: fly logs
-```
-
-**Access database:**
-```bash
-sqlite3 /data/agent.db
+     -d "url=<NGROK_URL>/telegram/webhook/<SECRET_TOKEN>"
 ```
 
 ## Telegram Commands
 
-- `/sleep` - Stop responding to queries
-- `/wakeup` - Resume responding
-- `/reset` - Clear chat history
+- `/clear` - Clear chat history for your session
 - Natural language queries for all other actions
 
 ## Development
@@ -83,6 +88,6 @@ mypy src/
 ```
 
 **Adding new tools:**
-1. Create tool class in `src/tools/` inheriting from `Tool`
-2. Implement `run()` and `schema()` methods
-3. Register in `src/planner/agent.py`
+1. Create a tool class in `src/tools/` inheriting from `Tool`
+2. Implement `run()` and define `parameters`
+3. Register in `src/tools/registry.py`
