@@ -13,7 +13,7 @@ from src.tools.registry import TOOLS
 client = AsyncOpenAI()
 logging.basicConfig(level=logging.INFO)
 
-MAX_STEPS = 4
+MAX_STEPS = 50
 
 _messages: list = [build_system_prompt()]
 _tool_schemas = [tool.schema() for tool in TOOLS.values()]
