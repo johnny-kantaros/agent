@@ -13,18 +13,6 @@ logger = logging.getLogger(__name__)
 TELEGRAM_CLIENT = TelegramClient()
 
 
-def _safe_create_task(coro) -> None:
-    task = asyncio.create_task(coro)
-
-    def _handle(t):
-        try:
-            t.result()
-        except Exception as e:
-            logger.error(f"Background task failed: {e}")
-
-    task.add_done_callback(_handle)
-
-
 async def _route_command(ctx, client: TelegramClient) -> bool:
     if ctx.text == "/clear":
         agent.reset_history()
@@ -48,5 +36,5 @@ async def handle_telegram_update(update: dict[str, Any]) -> None:
         advance(update_id)
         return
 
-    _safe_create_task(dispatch(ctx, TELEGRAM_CLIENT))
+    asyncio.create_task(dispatch(ctx, TELEGRAM_CLIENT))
     advance(update_id)
