@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from openai.types.chat import ChatCompletionSystemMessageParam
 
-MAX_HISTORY = 10
+MAX_CONTEXT_CHARS = 200_000
 
 
 def build_system_prompt() -> ChatCompletionSystemMessageParam:
@@ -34,17 +34,37 @@ def build_system_prompt() -> ChatCompletionSystemMessageParam:
     )
 
 
+def _context_size(messages: list) -> int:
+    total = 0
+    for m in messages:
+        total += len(str(m.get("content") or ""))
+        if m.get("tool_calls"):
+            total += len(str(m["tool_calls"]))
+    return total
+
+
 def trim_messages(messages: list) -> list:
+    """Trim history to fit within MAX_CONTEXT_CHARS while preserving coherence.
+
+    Guarantees:
+    - System prompt is always first.
+    - The most recent user turn and everything after it are never dropped.
+    - History always starts at a user message (no orphaned tool/assistant fragments).
+    - History never ends on an assistant message with unanswered tool calls.
+    """
     system = messages[0]
-    rest = messages[1:]
-    trimmed = rest[-(MAX_HISTORY - 1) :]
+    rest = list(messages[1:])
 
-    # Don't start on an orphaned tool response
-    while trimmed and trimmed[0]["role"] == "tool":
-        trimmed = trimmed[1:]
+    last_user = max((i for i, m in enumerate(rest) if m.get("role") == "user"), default=0)
 
-    # Don't end on an assistant message with unanswered tool calls
-    while trimmed and trimmed[-1].get("role") == "assistant" and trimmed[-1].get("tool_calls"):
-        trimmed = trimmed[:-1]
+    while _context_size([system] + rest) > MAX_CONTEXT_CHARS and last_user > 0:
+        rest = rest[1:]
+        last_user -= 1
 
-    return [system] + trimmed
+    while rest and rest[0].get("role") != "user":
+        rest = rest[1:]
+
+    while rest and rest[-1].get("role") == "assistant" and rest[-1].get("tool_calls"):
+        rest = rest[:-1]
+
+    return [system] + rest

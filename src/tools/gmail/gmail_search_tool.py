@@ -10,10 +10,9 @@ class GmailSearchTool(Tool):
     description = """
     Search and read emails in Gmail. Uses Gmail search syntax (same as the Gmail search bar).
     Examples: "from:john@example.com", "subject:invoice", "is:unread", "after:2026/07/01".
-    Returns email summaries including sender, subject, date, and snippet.
+    Returns up to 75 email summaries including sender, subject, date, and snippet.
     Use gmail_get_message to fetch the full body of a specific email.
     """
-    progress_indicator_message = "Searching Gmail..."
 
     parameters = {
         "type": "object",
@@ -21,10 +20,6 @@ class GmailSearchTool(Tool):
             "query": {
                 "type": "string",
                 "description": "Gmail search query (e.g. 'from:boss@company.com is:unread').",
-            },
-            "max_results": {
-                "type": "integer",
-                "description": "Maximum number of results to return. Defaults to 20.",
             },
         },
         "required": ["query"],
@@ -35,10 +30,7 @@ class GmailSearchTool(Tool):
 
     async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
         try:
-            results = self.service.search(
-                query=tool_input["query"],
-                max_results=tool_input.get("max_results", 20),
-            )
+            results = self.service.search(query=tool_input["query"])
             yield ToolEvent(
                 type="result",
                 result=ToolCallResult(

@@ -1,5 +1,7 @@
 import base64
+import html
 import os
+import re
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -9,6 +11,15 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 load_dotenv()
+
+_INVISIBLE_CHARS = re.compile(r"[​‌‍‎‏͏﻿­⁠]+")
+
+
+def _clean_snippet(text: str | None) -> str | None:
+    if not text:
+        return text
+    return _INVISIBLE_CHARS.sub("", html.unescape(text)).strip()
+
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
@@ -37,7 +48,7 @@ class GmailService:
 
     # --- Search / Read ---
 
-    def search(self, query: str, max_results: int = 20) -> list[dict]:
+    def search(self, query: str, max_results: int = 75) -> list[dict]:
         result = (
             self.service.users()
             .messages()
@@ -118,7 +129,7 @@ class GmailService:
         return {
             "id": msg["id"],
             "thread_id": msg.get("threadId"),
-            "snippet": msg.get("snippet"),
+            "snippet": _clean_snippet(msg.get("snippet")),
             "from": headers.get("From"),
             "to": headers.get("To"),
             "subject": headers.get("Subject"),
