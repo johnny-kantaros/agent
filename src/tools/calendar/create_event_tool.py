@@ -41,24 +41,6 @@ class CreateCalendarEvent(Tool):
                 "type": "string",
                 "description": "Timezone for the event (e.g. America/Los_Angeles).",
             },
-            "reminders": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "method": {
-                            "type": "string",
-                            "enum": ["email", "popup"],
-                        },
-                        "minutes_before": {
-                            "type": "integer",
-                            "description": "Minutes before event to trigger reminder.",
-                        },
-                    },
-                    "required": ["method", "minutes_before"],
-                },
-                "description": "Optional reminders for the event.",
-            },
         },
         "required": ["title", "start_time", "end_time"],
     }
@@ -114,7 +96,6 @@ class CreateCalendarEvent(Tool):
                 )
                 return
 
-            # ---------------- SERVICE CALL ----------------
             event = self.service.create_event(
                 title=title,
                 start_time=start_time,

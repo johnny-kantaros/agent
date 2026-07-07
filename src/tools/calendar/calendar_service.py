@@ -93,6 +93,58 @@ class CalendarService:
             "end_time": end,
         }
 
+    def update_event(
+        self,
+        event_id: str,
+        title: str | None = None,
+        start_time: str | None = None,
+        end_time: str | None = None,
+        location: str | None = None,
+        description: str | None = None,
+        attendees: list[str] | None = None,
+        timezone: str = "America/Los_Angeles",
+    ) -> dict:
+        event = self.service.events().get(calendarId=self.calendar_id, eventId=event_id).execute()
+
+        if title:
+            event["summary"] = title
+        if location is not None:
+            event["location"] = location
+        if description is not None:
+            event["description"] = description
+        if attendees is not None:
+            event["attendees"] = [{"email": email} for email in attendees]
+
+        tz = ZoneInfo(timezone)
+        if start_time:
+            event["start"] = {
+                "dateTime": datetime.fromisoformat(start_time).replace(tzinfo=tz).isoformat(),
+                "timeZone": timezone,
+            }
+        if end_time:
+            event["end"] = {
+                "dateTime": datetime.fromisoformat(end_time).replace(tzinfo=tz).isoformat(),
+                "timeZone": timezone,
+            }
+
+        updated = (
+            self.service.events()
+            .update(calendarId=self.calendar_id, eventId=event_id, body=event)
+            .execute()
+        )
+
+        return {
+            "status": "updated",
+            "event_id": updated.get("id"),
+            "html_link": updated.get("htmlLink"),
+            "start_time": updated["start"].get("dateTime") or updated["start"].get("date"),
+            "end_time": updated["end"].get("dateTime") or updated["end"].get("date"),
+        }
+
+    def delete_event(self, event_id: str) -> dict:
+        self.service.events().delete(calendarId=self.calendar_id, eventId=event_id).execute()
+        return {"status": "deleted", "event_id": event_id}
+
     def list_events(
         self,
         time_min: str | None = None,

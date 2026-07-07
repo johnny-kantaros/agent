@@ -17,9 +17,9 @@ class GetCalendarEvents(Tool):
     parameters = {
         "type": "object",
         "properties": {
-            "title": {
+            "query": {
                 "type": "string",
-                "description": "Title of the calendar event (optional, used for filtering).",
+                "description": "Optional search query to filter events (searches across title, description, location, and attendees).",
             },
             "start_time": {
                 "type": "string",
@@ -45,7 +45,7 @@ class GetCalendarEvents(Tool):
         try:
             start_time = tool_input.get("start_time")
             end_time = tool_input.get("end_time")
-            query = tool_input.get("title")
+            query = tool_input.get("query")
 
             if not start_time:
                 yield ToolEvent(
