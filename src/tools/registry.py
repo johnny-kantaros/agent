@@ -1,7 +1,9 @@
 from src.tools.calendar.check_availability_tool import CheckCalendarAvailability
 from src.tools.calendar.create_event_tool import CreateCalendarEvent
+from src.tools.calendar.delete_event_tool import DeleteCalendarEvent
 from src.tools.calendar.find_timeslot_tool import FindCalendarTimeSlot
 from src.tools.calendar.get_calendar_events_tool import GetCalendarEvents
+from src.tools.calendar.update_event_tool import UpdateCalendarEvent
 from src.tools.flights.flight_search_tool import FlightSearchTool
 from src.tools.gmail.gmail_draft_tool import GmailDraftTool
 from src.tools.gmail.gmail_manage_tool import GmailManageTool
@@ -31,6 +33,8 @@ register(TennisScheduleChecker())
 register(TennisCourtBookerInitialization())
 register(TennisCourtConfirmTool())
 register(CreateCalendarEvent())
+register(UpdateCalendarEvent())
+register(DeleteCalendarEvent())
 register(GetCalendarEvents())
 register(FindCalendarTimeSlot())
 register(CheckCalendarAvailability())

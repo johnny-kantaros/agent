@@ -45,6 +45,7 @@ class CheckCalendarAvailability(Tool):
                         status="failure", data={"message": "Missing required field: start_time"}
                     ),
                 )
+                return
             if not end_time:
                 yield ToolEvent(
                     type="result",
@@ -52,6 +53,7 @@ class CheckCalendarAvailability(Tool):
                         status="failure", data={"message": "Missing required field: end_time"}
                     ),
                 )
+                return
 
             # Call service to check availability
             availability = self.service.check_availability(
