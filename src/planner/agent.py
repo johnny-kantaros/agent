@@ -8,6 +8,7 @@ from openai.types.chat import ChatCompletionUserMessageParam
 
 from src.models.interface import AgentUpdate, ToolCallResult
 from src.planner.context import build_system_prompt, trim_messages
+from src.planner.session import ChatSession
 from src.tools.registry import TOOLS
 
 client = AsyncOpenAI()
@@ -15,13 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 MAX_STEPS = 50
 
-_messages: list = [build_system_prompt()]
 _tool_schemas = [tool.schema() for tool in TOOLS.values()]
-
-
-def reset_history():
-    global _messages
-    _messages = [build_system_prompt()]
 
 
 async def _run_tool(tool_call) -> ToolCallResult:
@@ -61,50 +56,49 @@ async def _execute_tool_calls(tool_calls):
         yield tool_call_id, result
 
 
-async def run_stream(query: str):
-    global _messages
+async def run_stream(query: str, session: ChatSession):
+    async with session.lock:
+        session.messages[0] = build_system_prompt()
+        session.messages.append(ChatCompletionUserMessageParam(role="user", content=query))
 
-    _messages[0] = build_system_prompt()
-    _messages.append(ChatCompletionUserMessageParam(role="user", content=query))
+        for _ in range(MAX_STEPS):
+            session.messages = trim_messages(session.messages)
 
-    for _ in range(MAX_STEPS):
-        _messages = trim_messages(_messages)
+            logging.info("Messages:\n%s", json.dumps(session.messages, indent=2, default=str))
 
-        logging.info("Messages:\n%s", json.dumps(_messages, indent=2, default=str))
-
-        response = await client.chat.completions.create(
-            model="gpt-5-mini",
-            messages=_messages,
-            tools=_tool_schemas,
-        )
-        message = response.choices[0].message
-
-        if message.tool_calls:
-            _messages.append(
-                {
-                    "role": "assistant",
-                    "content": message.content or "",
-                    "tool_calls": message.tool_calls,
-                }
+            response = await client.chat.completions.create(
+                model="gpt-5-mini",
+                messages=session.messages,
+                tools=_tool_schemas,
             )
+            message = response.choices[0].message
 
-            async for event in _execute_tool_calls(message.tool_calls):
-                if isinstance(event, AgentUpdate):
-                    yield event
-                else:
-                    tool_call_id, tool_result = event
-                    _messages.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tool_call_id,
-                            "content": json.dumps(asdict(tool_result)),
-                        }
-                    )
+            if message.tool_calls:
+                session.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": message.content or "",
+                        "tool_calls": message.tool_calls,
+                    }
+                )
 
-            continue
+                async for event in _execute_tool_calls(message.tool_calls):
+                    if isinstance(event, AgentUpdate):
+                        yield event
+                    else:
+                        tool_call_id, tool_result = event
+                        session.messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call_id,
+                                "content": json.dumps(asdict(tool_result)),
+                            }
+                        )
 
-        _messages.append({"role": "assistant", "content": message.content or ""})
-        yield AgentUpdate(type="final", message=message.content or "")
-        return
+                continue
 
-    yield AgentUpdate(type="final", message="Sorry, something went wrong.")
+            session.messages.append({"role": "assistant", "content": message.content or ""})
+            yield AgentUpdate(type="final", message=message.content or "")
+            return
+
+        yield AgentUpdate(type="final", message="Sorry, something went wrong.")
