@@ -9,8 +9,8 @@ class ScheduleJobTool(Tool):
     name = "schedule_job"
     description = (
         "Schedule a job for the agent to execute autonomously at a future time. "
-        "Use for one-off tasks (e.g. 'book tennis Saturday at 8am') or recurring work "
-        "(e.g. 'every Monday summarize my calendar'). "
+        "Use ONLY when the agent needs to actively do something: book a court, search emails, summarize a calendar, check prices, etc. "
+        "Do NOT use this for simple reminders — use create_task with scheduled_at for those. "
         "Recurrence uses cron syntax: '0 8 * * 1' = every Monday at 8am. "
         "Results are sent to the user via the specified channels."
     )
