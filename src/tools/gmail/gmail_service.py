@@ -12,16 +12,14 @@ from googleapiclient.discovery import build
 
 load_dotenv()
 
-_INVISIBLE_CHARS = re.compile(r"[​‌‍‎‏͏﻿­⁠]+")
+INVISIBLE_CHARS = re.compile(r"[​‌‍‎‏͏﻿­⁠]+")
+SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
 
 def _clean_snippet(text: str | None) -> str | None:
     if not text:
         return text
-    return _INVISIBLE_CHARS.sub("", html.unescape(text)).strip()
-
-
-SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+    return INVISIBLE_CHARS.sub("", html.unescape(text)).strip()
 
 
 class GmailService:
@@ -46,8 +44,6 @@ class GmailService:
         creds.refresh(Request())
         self.service = build("gmail", "v1", credentials=creds)
 
-    # --- Search / Read ---
-
     def search(self, query: str, max_results: int = 75) -> list[dict]:
         result = (
             self.service.users()
@@ -59,20 +55,11 @@ class GmailService:
         messages = result.get("messages", [])
         return [self._get_summary(m["id"]) for m in messages]
 
-    def get_message(self, message_id: str) -> dict:
-        msg = (
-            self.service.users().messages().get(userId="me", id=message_id, format="full").execute()
-        )
-        return self._parse_full(msg)
-
-    # --- Draft ---
-
     def create_draft(
         self,
         to: str,
         subject: str,
         body: str,
-        reply_to_id: str | None = None,
         thread_id: str | None = None,
     ) -> dict:
         mime = self._build_mime(to, subject, body)
@@ -84,7 +71,11 @@ class GmailService:
         draft = self.service.users().drafts().create(userId="me", body=draft_body).execute()
         return {"draft_id": draft["id"], "thread_id": draft.get("message", {}).get("threadId")}
 
-    # --- Manage ---
+    def send_email(self, to: str, subject: str, body: str) -> dict:
+        mime = self._build_mime(to, subject, body)
+        raw = base64.urlsafe_b64encode(mime.as_bytes()).decode()
+        sent = self.service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        return {"message_id": sent.get("id")}
 
     def mark_read(self, message_id: str) -> None:
         self.service.users().messages().modify(
@@ -109,8 +100,6 @@ class GmailService:
         self.service.users().messages().modify(
             userId="me", id=message_id, body={"addLabelIds": [label_id]}
         ).execute()
-
-    # --- Helpers ---
 
     def _get_summary(self, message_id: str) -> dict:
         msg = (
@@ -137,24 +126,8 @@ class GmailService:
             "labels": msg.get("labelIds", []),
         }
 
-    def _parse_full(self, msg: dict) -> dict:
-        summary = self._get_summary(msg["id"])
-        body = self._extract_body(msg.get("payload", {}))
-        return {**summary, "body": body}
-
-    def _extract_body(self, payload: dict) -> str:
-        if payload.get("body", {}).get("data"):
-            return base64.urlsafe_b64decode(payload["body"]["data"]).decode(
-                "utf-8", errors="replace"
-            )
-        for part in payload.get("parts", []):
-            if part.get("mimeType") == "text/plain" and part.get("body", {}).get("data"):
-                return base64.urlsafe_b64decode(part["body"]["data"]).decode(
-                    "utf-8", errors="replace"
-                )
-        return ""
-
-    def _build_mime(self, to: str, subject: str, body: str) -> MIMEMultipart:
+    @staticmethod
+    def _build_mime(to: str, subject: str, body: str) -> MIMEMultipart:
         msg = MIMEMultipart()
         msg["To"] = to
         msg["Subject"] = subject

@@ -7,65 +7,62 @@ from src.tools.tasks.task_service import TaskService
 
 class CreateTaskTool(Tool):
     name = "create_task"
-    description = """
-    Create a new task with optional due date, details and reminder cadence.
-    Adhere to the following instructions:
-        1. The task name should be short and descriptive (only a few words). 
-        2. Only include details if provided by the user. If provided, they should also be stored very concisely.
-        3. Just make the task provided - do NOT ask for details, reminders, etc.
-    """
+    description = (
+        "Create a new user task. "
+        "Set scheduled_at to remind the user at a specific time. "
+        "Set recurrence (cron expression) for repeating reminders. "
+        "Just create the task — do not ask for extra details unless provided."
+    )
 
     parameters = {
         "type": "object",
         "properties": {
-            "task": {"type": "string", "description": "The task description"},
+            "title": {
+                "type": "string",
+                "description": "Short, descriptive task name (a few words).",
+            },
+            "description": {
+                "type": "string",
+                "description": "Optional additional details.",
+            },
+            "priority": {
+                "type": "string",
+                "enum": ["low", "medium", "high"],
+                "description": "Optional priority level.",
+            },
             "due_date": {
                 "type": "string",
-                "description": "Optional due date (ISO format preferred)",
+                "description": "Optional deadline (ISO 8601).",
             },
-            "details": {
+            "scheduled_at": {
                 "type": "string",
-                "description": "Optional task details",
+                "description": "When to send a reminder (ISO 8601). Omit if no reminder needed.",
             },
-            "reminder_cadence": {
+            "recurrence": {
                 "type": "string",
-                "description": "Reminder frequency (e.g. 'daily', 'weekly', 'none')",
+                "description": "Cron expression for repeating reminders (e.g. '0 9 * * *' = daily at 9am). Requires scheduled_at.",
+            },
+            "notify_via": {
+                "type": "array",
+                "items": {"type": "string", "enum": ["telegram", "email"]},
+                "description": "Reminder channels. Defaults to ['telegram'].",
             },
         },
-        "required": ["task"],
+        "required": ["title"],
     }
 
     def __init__(self):
         self.service = TaskService()
 
-    async def run(
-        self,
-        tool_input: dict,
-        user_context: dict,
-    ) -> AsyncGenerator[ToolEvent, None]:
-
+    async def run(self, tool_input: dict, user_context: dict) -> AsyncGenerator[ToolEvent, None]:
         try:
-            self.service.create_task(tool_input)
-
+            result = self.service.create_task(tool_input)
             yield ToolEvent(
                 type="result",
-                result=ToolCallResult(
-                    status="success",
-                    data={
-                        "task": tool_input.get("task"),
-                        "message": f"Task '{tool_input.get('task')}' created.",
-                    },
-                ),
+                result=ToolCallResult(status="success", data=result),
             )
-
         except Exception as e:
             yield ToolEvent(
                 type="result",
-                result=ToolCallResult(
-                    status="failure",
-                    data={
-                        "error": str(e),
-                        "task": tool_input.get("task"),
-                    },
-                ),
+                result=ToolCallResult(status="failure", data={"error": str(e)}),
             )
