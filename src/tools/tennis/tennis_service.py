@@ -1,8 +1,4 @@
-import json
 import os
-import sys
-import urllib.error
-import urllib.request
 from datetime import date, timedelta
 
 import requests
@@ -18,6 +14,23 @@ from src.utils.constants import (
 
 load_dotenv()
 
+BROWSER_HEADERS = {
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://www.rec.us",
+    "Priority": "u=1, i",
+    "Referer": "https://www.rec.us/",
+    "Sec-Ch-Ua": '"Chromium";v="149", "Not)A;Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+    ),
+}
+
 
 class TennisService:
     def __init__(self):
@@ -31,6 +44,7 @@ class TennisService:
 
     def _headers(self):
         return {
+            **BROWSER_HEADERS,
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -53,7 +67,6 @@ class TennisService:
 
         payload = {
             "courtSportIds": [court_sport_id],
-            "flow": "cart",
             "participantUserId": self.PARTICIPANT_ID,
             "from": {"date": date, "time": start_time},
             "to": {"date": date, "time": end_time},
@@ -157,11 +170,7 @@ class TennisService:
 
         url = TENNIS_2FAC_SEND_URL
 
-        headers = {
-            "Authorization": f"Bearer {self.token}",  # your auth token
-            "Content-Type": "application/json",
-            "Accept": "*/*",
-        }
+        headers = {**self._headers(), "Accept": "*/*"}
 
         response = requests.post(url, headers=headers)
         response.raise_for_status()
@@ -169,7 +178,7 @@ class TennisService:
 
     def _verify_2fac_code(self, code):
         url = TENNIS_2FAC_VERIFY_URL
-        headers = {"Authorization": f"Bearer {self.token}", "Content-Type": "application/json"}
+        headers = self._headers()
         payload = {"code": code}
         response = requests.post(url, headers=headers, json=payload)
         response.raise_for_status()
@@ -185,11 +194,7 @@ class TennisService:
             "returnSecureToken": True,
         }
 
-        headers = {
-            "Content-Type": "application/json",
-            "Origin": "https://www.rec.us",
-            "Referer": "https://www.rec.us/",
-        }
+        headers = {**BROWSER_HEADERS, "Content-Type": "application/json"}
 
         r = requests.post(url, json=payload, headers=headers)
         r.raise_for_status()
@@ -219,16 +224,14 @@ class TennisService:
 
     def _fetch_schedule(self, location_id: str, day: date) -> dict:
         url = f"{TENNIS_BASE_API_URL}/locations/{location_id}/schedule?startDate={day.strftime('%Y-%m-%d')}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                return json.loads(resp.read())
-        except urllib.error.HTTPError as e:
-            print(f"  HTTP {e.code}: {url}", file=sys.stderr)
-            return {}
-        except Exception as e:
-            print(f"  Error: {e}", file=sys.stderr)
-            return {}
+            r = requests.get(url, headers=self._headers(), timeout=10)
+            r.raise_for_status()
+            return r.json()
+        except requests.HTTPError as e:
+            raise RuntimeError(
+                f"Tennis schedule fetch failed with HTTP {r.status_code} {r.reason} for {url}"
+            ) from e
 
     def _parse_slots(self, schedule_data: dict, day: date) -> list[dict]:
         day_key = day.strftime("%Y%m%d")
@@ -273,6 +276,9 @@ class TennisService:
         Returns:
             Structured availability results
         """
+
+        if not self.token:
+            self._login()
 
         selected_courts = {
             name: info
