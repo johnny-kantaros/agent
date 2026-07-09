@@ -18,7 +18,7 @@ SECRET_TOKEN = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
 if not SECRET_TOKEN:
     raise RuntimeError("TELEGRAM_WEBHOOK_SECRET is not set")
 
-_store = SessionStore()
+session_store = SessionStore()
 
 
 class SendMessageRequest(BaseModel):
@@ -29,7 +29,7 @@ class SendMessageRequest(BaseModel):
 def create_session(token: str):
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Forbidden")
-    session_id, _ = _store.create()
+    session_id, _ = session_store.create()
     return {"session_id": session_id}
 
 
@@ -37,9 +37,9 @@ def create_session(token: str):
 def delete_session(session_id: str, token: str):
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Forbidden")
-    if _store.get(session_id) is None:
+    if session_store.get(session_id) is None:
         raise HTTPException(status_code=404, detail="Session not found")
-    _store.delete(session_id)
+    session_store.delete(session_id)
     return {"status": "deleted"}
 
 
@@ -47,7 +47,7 @@ def delete_session(session_id: str, token: str):
 async def send_message(session_id: str, token: str, data: SendMessageRequest):
     if token != SECRET_TOKEN:
         raise HTTPException(status_code=403, detail="Forbidden")
-    session = _store.get(session_id)
+    session = session_store.get(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
     async for event in agent.run_stream(data.message, session):
@@ -68,7 +68,7 @@ async def telegram_webhook(token: str, req: Request):
     if chat_id is None:
         return {"ok": True}
 
-    session = _store.get_or_create(str(chat_id))
+    session = session_store.get_or_create(str(chat_id))
     asyncio.create_task(handle_telegram_update(data, session))
     return {"ok": True}
 

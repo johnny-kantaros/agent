@@ -19,15 +19,32 @@ def init_db():
     conn = get_connection()
 
     conn.execute("""
+    CREATE TABLE IF NOT EXISTS agent_jobs (
+        id           TEXT PRIMARY KEY,
+        instruction  TEXT NOT NULL,
+        status       TEXT NOT NULL DEFAULT 'pending',
+        scheduled_at TEXT NOT NULL,
+        recurrence   TEXT,
+        notify_via   TEXT NOT NULL DEFAULT '["telegram"]',
+        last_run_at  TEXT,
+        result       TEXT,
+        error        TEXT,
+        created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task TEXT NOT NULL,
-        details TEXT DEFAULT 'none',
-        due_date TEXT,
-        reminder_cadence TEXT DEFAULT 'none',
-        completed BOOLEAN DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        last_reminded_at TEXT
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        title        TEXT NOT NULL,
+        description  TEXT,
+        status       TEXT NOT NULL DEFAULT 'pending',
+        priority     TEXT,
+        due_date     TEXT,
+        scheduled_at TEXT,
+        recurrence   TEXT,
+        notify_via   TEXT,
+        created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
     """)
 

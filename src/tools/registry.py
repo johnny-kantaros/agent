@@ -8,6 +8,10 @@ from src.tools.flights.flight_search_tool import FlightSearchTool
 from src.tools.gmail.gmail_draft_tool import GmailDraftTool
 from src.tools.gmail.gmail_manage_tool import GmailManageTool
 from src.tools.gmail.gmail_search_tool import GmailSearchTool
+from src.tools.jobs.cancel_job_tool import CancelJobTool
+from src.tools.jobs.list_jobs_tool import ListJobsTool
+from src.tools.jobs.schedule_job_tool import ScheduleJobTool
+from src.tools.jobs.update_job_tool import UpdateJobTool
 from src.tools.squash.squash_availability_tool import SquashCourtChecker
 from src.tools.squash.squash_booking_tool import SquashBookingTool
 from src.tools.tasks.complete_task import CompleteTaskTool
@@ -48,3 +52,7 @@ register(ListTasksTool())
 register(CreateTaskTool())
 register(UpdateTaskTool())
 register(CompleteTaskTool())
+register(ScheduleJobTool())
+register(ListJobsTool())
+register(CancelJobTool())
+register(UpdateJobTool())

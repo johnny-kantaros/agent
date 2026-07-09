@@ -14,3 +14,4 @@ repos:
         args: ["--ignore-missing-imports"]
         additional_dependencies:
           - types-requests
+          - types-croniter
