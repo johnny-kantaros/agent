@@ -16,7 +16,7 @@ class TelegramClient:
         try:
             resp = await self.client.post(
                 f"{self.base_url}/sendMessage",
-                json={"chat_id": chat_id, "text": text},
+                json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
             )
             resp.raise_for_status()
             return resp.json()["result"]
@@ -32,6 +32,7 @@ class TelegramClient:
                     "chat_id": chat_id,
                     "message_id": message_id,
                     "text": text,
+                    "parse_mode": "Markdown",
                 },
             )
         except httpx.HTTPError as e:
