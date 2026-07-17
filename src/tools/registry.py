@@ -17,6 +17,7 @@ from src.tools.news.hackernews_tool import HackerNewsTool
 from src.tools.news.newsapi_tool import NewsAPITool
 from src.tools.squash.squash_availability_tool import SquashCourtChecker
 from src.tools.squash.squash_booking_tool import SquashBookingTool
+from src.tools.system.update_timezone_tool import UpdateTimezoneTool
 from src.tools.tasks.complete_task import CompleteTaskTool
 from src.tools.tasks.create_task_tool import CreateTaskTool
 from src.tools.tasks.list_tasks_tool import ListTasksTool
@@ -62,3 +63,4 @@ register(ScheduleJobTool())
 register(ListJobsTool())
 register(CancelJobTool())
 register(UpdateJobTool())
+register(UpdateTimezoneTool())

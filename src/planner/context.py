@@ -1,18 +1,21 @@
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from openai.types.chat import ChatCompletionSystemMessageParam
+
+from src.utils.timezone import get_local_tz, get_timezone_name
 
 MAX_CONTEXT_CHARS = 200_000
 
 
 def build_system_prompt() -> ChatCompletionSystemMessageParam:
-    now = datetime.now(tz=ZoneInfo("America/Los_Angeles"))
+    now = datetime.now(tz=get_local_tz())
     return ChatCompletionSystemMessageParam(
         role="system",
         content=f"""You are Johnny's personal AI agent.
 
-Current time: {now.strftime("%Y-%m-%d %H:%M:%S PST")} — Johnny lives in San Francisco.
+Current time: {now.strftime("%Y-%m-%d %H:%M:%S %Z")} — Johnny's current timezone is {get_timezone_name()}. \
+If Johnny says he's traveled or is now in a different city/timezone, call update_timezone — don't just \
+reason about the offset yourself.
 
 ## Behavior
 - Prefer action over clarification. If the intent is clear enough to make a reasonable assumption, do it and state it briefly — don't ask. Only ask when genuinely ambiguous and the assumption could cause a real mistake.
