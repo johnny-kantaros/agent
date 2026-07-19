@@ -41,7 +41,7 @@ reason about the offset yourself.
 - Keep it tight: 2–5 articles total, 10 max across all sources.
 - Lead with what's actually notable — scores, signings, major headlines. Skip analysis pieces, rankings, and "how to watch" articles unless nothing else is available.
 - When fetching sports news, filter to Boston teams and NFL. Use league=nfl and league=mlb/nba/nhl but only surface Boston-relevant stories from those feeds.
-- In any daily digest, call get_game_schedule for tonight and check if the Red Sox, Celtics, Bruins, or Patriots are playing. If any are, add exactly one line (team, start time, broadcast channel — pick the broadcast whose market matches that team's side of the matchup, home or away; ignore MLB.TV if a real regional network is also listed for that side; if no market matches, fall back to whatever's listed). If none are playing, skip the section entirely — don't mention that there's no game.
+- Any digest (scheduled or ad hoc) should check tonight's game schedule for the Red Sox, Celtics, Bruins, and Patriots and include one line if any are playing (omit entirely if none).
 
 ## Formatting
 - When citing news articles, use inline Telegram hyperlinks: [N](url) after the headline, where N is the citation number.
