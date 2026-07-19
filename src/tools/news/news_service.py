@@ -10,6 +10,7 @@ class NewsService:
         "nfl": ("football", "nfl"),
         "nba": ("basketball", "nba"),
         "mlb": ("baseball", "mlb"),
+        "nhl": ("hockey", "nhl"),
         "tennis": ("tennis", "atp"),
         "golf": ("golf", "pga"),
     }
@@ -118,6 +119,49 @@ class NewsService:
             results = list(executor.map(fetch_league, leagues))
 
         return [article for league_articles in results for article in league_articles]
+
+    def get_game_schedule(self, leagues: list[str], date: str) -> list[dict]:
+        """date is YYYYMMDD."""
+
+        def fetch_league(league: str) -> list[dict]:
+            if league not in self.ESPN_LEAGUES:
+                return []
+            sport, slug = self.ESPN_LEAGUES[league]
+            try:
+                resp = requests.get(
+                    f"{self.espn_url}/{sport}/{slug}/scoreboard",
+                    params={"dates": date},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+                games = []
+                for event in resp.json().get("events", []):
+                    comp = event["competitions"][0]
+                    competitors = comp.get("competitors", [])
+                    home = next((c for c in competitors if c["homeAway"] == "home"), None)
+                    away = next((c for c in competitors if c["homeAway"] == "away"), None)
+                    broadcasts = [
+                        {"market": b.get("market"), "names": b.get("names", [])}
+                        for b in comp.get("broadcasts", [])
+                    ]
+                    games.append(
+                        {
+                            "league": league.upper(),
+                            "start_time": event.get("date"),
+                            "home_team": home["team"]["displayName"] if home else None,
+                            "away_team": away["team"]["displayName"] if away else None,
+                            "status": event.get("status", {}).get("type", {}).get("description"),
+                            "broadcasts": broadcasts,
+                        }
+                    )
+                return games
+            except Exception:
+                return []
+
+        with ThreadPoolExecutor(max_workers=len(leagues)) as executor:
+            results = list(executor.map(fetch_league, leagues))
+
+        return [game for league_games in results for game in league_games]
 
 
 news_service = NewsService()

@@ -13,6 +13,7 @@ from src.tools.jobs.list_jobs_tool import ListJobsTool
 from src.tools.jobs.schedule_job_tool import ScheduleJobTool
 from src.tools.jobs.update_job_tool import UpdateJobTool
 from src.tools.news.espn_tool import ESPNTool
+from src.tools.news.game_schedule_tool import GameScheduleTool
 from src.tools.news.hackernews_tool import HackerNewsTool
 from src.tools.news.newsapi_tool import NewsAPITool
 from src.tools.squash.squash_availability_tool import SquashCourtChecker
@@ -52,6 +53,7 @@ register(FlightSearchTool())
 register(NewsAPITool())
 register(HackerNewsTool())
 register(ESPNTool())
+register(GameScheduleTool())
 register(GmailSearchTool())
 register(GmailDraftTool())
 register(GmailManageTool())
